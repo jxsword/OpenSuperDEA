@@ -1,0 +1,61 @@
+name: ci
+
+# 三段式 CI 之 Actions 两段（第一段为 WSL 本地，见 design_docs/03 册 §6）：
+# Linux（GCC）先行全绿 → Windows（MSVC）跟进（needs 依赖实现顺序门禁）
+on:
+  push:
+    branches: [main, develop, 'release/**']
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    env:
+      VCPKG_ROOT: ${{ env.VCPKG_INSTALLATION_ROOT }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bootstrap vcpkg（runner 预装）
+        run: $VCPKG_ROOT/bootstrap-vcpkg.sh
+
+      - name: vcpkg 二进制缓存
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/vcpkg/archives
+          key: vcpkg-linux-${{ hashFiles('vcpkg.json') }}
+
+      - name: 配置（vcpkg manifest）
+        run: cmake --preset default
+
+      - name: 构建
+        run: cmake --build build --parallel
+
+      - name: 单元测试
+        run: ctest --test-dir build --output-on-failure
+
+  windows:
+    needs: linux # 顺序门禁：Linux 全绿后才启动 Windows 段
+    runs-on: windows-latest
+    env:
+      VCPKG_ROOT: ${{ env.VCPKG_INSTALLATION_ROOT }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bootstrap vcpkg（runner 预装）
+        run: $env:VCPKG_ROOT\bootstrap-vcpkg.bat
+
+      - name: vcpkg 二进制缓存
+        uses: actions/cache@v4
+        with:
+          path: ~\AppData\Local\vcpkg\archives
+          key: vcpkg-windows-${{ hashFiles('vcpkg.json') }}
+
+      - name: 配置（MSVC，P-013）
+        run: cmake --preset win-msvc
+
+      - name: 构建
+        run: cmake --build build --parallel
+
+      - name: 单元测试
+        run: ctest --test-dir build --output-on-failure
