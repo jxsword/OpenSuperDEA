@@ -1,0 +1,37 @@
+# 格式基准：clang-format 内置 Microsoft 模板（实测继承：4 空格缩进、Allman 大括号、
+# 禁止短函数/短 if 合并单行、指针对齐 Right、TabWidth 4、UseTab Never），
+# 与 naming_convention.md §3 的差异仅列宽（120 -> 100），故覆写最小化。
+# 决策记录见 docs/decision_log.md DR-001。
+---
+BasedOnStyle: Microsoft
+ColumnLimit: 100
+Standard: Latest
+
+# ---- Qt 适配 ----
+# Qt 容器遍历宏按控制流语句处理，避免 foreach(...) 被当作函数调用排版
+ForEachMacros:
+  - 'foreach'
+  - 'Q_FOREACH'
+  - 'BOOST_FOREACH'
+
+# Q_OBJECT 等宏独占一行时视为语句宏，不与前后内容合并
+StatementMacros:
+  - 'Q_OBJECT'
+  - 'Q_GADGET'
+  - 'Q_EMIT'
+  - 'Q_SLOTS'
+  - 'Q_SIGNALS'
+
+# include 分组排序：Qt 头 -> 系统头 -> 项目头（主头文件自动优先）
+IncludeCategories:
+  # Qt 模块头（QtCore/QtWidgets/... 或 <QtWidgets/QWidget>）
+  - Regex: '^"(QtCore|QtGui|QtWidgets|QtNetwork|QtConcurrent|QtTest)/'
+    Priority: 1
+  - Regex: '^<(QtCore|QtGui|QtWidgets|QtNetwork|QtConcurrent|QtTest)/'
+    Priority: 1
+  # 系统/第三方尖括号头
+  - Regex: '^<[^/]+>$'
+    Priority: 2
+  # 项目内引号头
+  - Regex: '.*'
+    Priority: 3

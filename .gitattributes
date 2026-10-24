@@ -1,0 +1,13 @@
+# 对所有文件启用自动换行符转换，并在检出时统一为 LF（适用于跨平台项目）
+* text=auto eol=lf
+
+# 明确指定某些文件类型为二进制，避免 Git 误处理
+*.png binary
+*.jpg binary
+*.zip binary
+*.docx binary
+*.pdf binary
+
+# 为 Windows 批处理文件等特殊文件类型保留 CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf

@@ -1,0 +1,97 @@
+# 命名与注释规范以仓库根 naming_convention.md 为准；本文件只做机器可强制的部分。
+# 建议级约束（布尔 is_/has_/can_、回调 on_、接口 I/Base、覆写 Qt 虚函数保留原名等）
+# 见 scripts/README.md 的评审清单。
+---
+# ---- 检查项 ----
+Checks: '
+  clang-analyzer-*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  performance-*,
+  modernize-*,
+  -modernize-use-trailing-return-type,
+  google-*,
+  -google-build-header-guard,
+  readability-*,
+  -readability-magic-numbers,
+  -readability-function-cognitive-complexity,
+  -readability-implicit-bool-conversion,
+  -readability-static-accessed-through-instance,
+  readability-identifier-naming
+'
+
+# 开关理由（与 naming_convention.md 的取舍）：
+# + clang-analyzer-*        深度静态分析（空指针、越界、资源泄漏）
+# + bugprone-*              易错模式（悬垂引用、自移动、整数截断）
+# - bugprone-easily-swappable-parameters   相邻同类型参数告警，科学计算代码误报极高
+# + performance-*           不必要拷贝、按值传大对象等
+# + modernize-*             C++17 现代化建议
+# - modernize-use-trailing-return-type     Google 风格不要求尾置返回类型，噪音
+# + google-*                Google 风格中与本文档不冲突的部分（显式单参构造、
+#                           头文件全局命名空间等）
+# - google-build-header-guard              本文档未约定头文件守卫格式，避免强推路径式命名
+# + readability-identifier-naming          命名强制，规则见下（对应文档 §1）
+# - readability-magic-numbers              DEA 算法代码含大量数值常数，噪音过大
+# - readability-function-cognitive-complexity  复杂度阈值告警属重构建议，不作提交门禁
+# - readability-implicit-bool-conversion   与 Qt 隐式布尔用法冲突，噪音
+# - readability-static-accessed-through-instance  Qt 惯用 app.exec()/QApplication::exec()
+#                                          经实例访问静态成员是 Qt 生态常态，误报
+
+# ---- 命名规则（对应 naming_convention.md §1.1-§1.6）----
+CheckOptions:
+  # 类/结构体/枚举类型/类型别名/模板参数：PascalCase
+  - key: readability-identifier-naming.ClassCase
+    value: CamelCase
+  - key: readability-identifier-naming.StructCase
+    value: CamelCase
+  - key: readability-identifier-naming.EnumCase
+    value: CamelCase
+  - key: readability-identifier-naming.TypeAliasCase
+    value: CamelCase
+  - key: readability-identifier-naming.TypeTemplateParameterCase
+    value: CamelCase
+  - key: readability-identifier-naming.ValueTemplateParameterCase
+    value: CamelCase
+  # 命名空间：snake_case（§1.6）
+  - key: readability-identifier-naming.NamespaceCase
+    value: lower_case
+  # 函数/方法：snake_case（§1.1/§1.3）
+  # 覆写 Qt 虚函数时名称由 Qt 决定（paintEvent/closeEvent/event/eventFilter 等
+  # lowerCamelCase），对 Event 系命名直接豁免；其余 Qt 覆写用行内 NOLINT（见 scripts/README.md）
+  - key: readability-identifier-naming.FunctionCase
+    value: lower_case
+  - key: readability-identifier-naming.MethodCase
+    value: lower_case
+  - key: readability-identifier-naming.MethodIgnoredRegexp
+    value: '^(event|eventFilter)$|Event$'
+  # 变量/参数：snake_case（§1.1）
+  - key: readability-identifier-naming.VariableCase
+    value: lower_case
+  - key: readability-identifier-naming.ParameterCase
+    value: lower_case
+  # 成员变量：snake_case；文档规定 `_` 后缀"可选"，故不设 MemberSuffix 强制（§1.1）
+  - key: readability-identifier-naming.MemberCase
+    value: lower_case
+  # 全局变量：g_ 前缀（§1.1；文档同时要求尽量避免全局变量）
+  - key: readability-identifier-naming.GlobalVariableCase
+    value: lower_case
+  - key: readability-identifier-naming.GlobalVariablePrefix
+    value: 'g_'
+  # 常量：constexpr 常量、类常量、全局常量 ALL_CAPS（§1.5）
+  - key: readability-identifier-naming.ConstexprVariableCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.GlobalConstantCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.ClassConstantCase
+    value: UPPER_CASE
+  # 枚举值：ALL_CAPS（§1.1）
+  - key: readability-identifier-naming.EnumConstantCase
+    value: UPPER_CASE
+  # 宏：ALL_CAPS（§1.5；项目前缀属建议级，见 scripts/README.md）
+  - key: readability-identifier-naming.MacroDefinitionCase
+    value: UPPER_CASE
+
+# ---- 分析范围 ----
+# 只关心项目源码与头文件，不分析系统/Qt 头
+HeaderFilterRegex: '^(src|include)/'
+FormatStyle: file

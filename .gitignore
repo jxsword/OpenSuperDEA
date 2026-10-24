@@ -1,0 +1,81 @@
+# ===== 构建产物 =====
+build/
+build-*/
+build_*/
+cmake-build-*/
+vcpkg_installed/
+*.o
+*.obj
+*.a
+*.so
+*.dll
+*.dylib
+
+# ===== CMake =====
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+.ninja_deps
+.ninja_log
+compile_commands.json
+CMakeUserPresets.json
+
+# ===== 覆盖率产物（llvm-cov / gcovr，见 SRS P-009）=====
+*.gcno
+*.gcda
+*.profraw
+*.profdata
+
+# ===== Python（对拍 harness 与过程脚本产物）=====
+__pycache__/
+*.py[cod]
+
+# ===== IDE / 编辑器 =====
+.idea/
+.vscode/*
+!.vscode/c_cpp_properties.json
+*.swp
+*~
+*.bak
+.cache/
+
+# ===== 系统 =====
+.DS_Store
+Thumbs.db
+
+# ===== Qt =====
+*.user
+*.user.*
+moc_*.cpp
+qrc_*.cpp
+ui_*.h
+*.qm
+
+# ===== 打包与分发（M7）=====
+build-win/
+AppDir/
+debroot/
+win-dist/
+squashfs-root/
+dist/
+out/
+*.exe
+*.deb
+*.AppImage
+/installer.nsi
+
+# ===== tools 下载型工具与压缩包（保留 .nsi/.png/.desktop）=====
+tools/linuxdeploy*
+tools/*.zip
+tools/*.tar.xz
+aqtinstall.log
+
+# ===== zcode / 会话产物 =====
+.zcode/
+.mimosa/
+.zcodeignore
+.zcode-cache/
+.zcode-cache-*/
+
+# ===== 临时文件（AGENTS.md 约定：过程文件不入库）=====
+tmp/

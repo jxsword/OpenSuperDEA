@@ -1,0 +1,43 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_size = 4
+
+[*.{c,cpp,cxx,h,hpp,hh}]
+indent_style = space
+indent_size = 4
+# 与 .clang-format 的 ColumnLimit 对齐
+max_line_length = 100
+
+[*Makefile*]
+indent_style = tab
+
+[*.mak]
+indent_style = tab
+
+[*.{cmake,CMakeLists.txt}]
+indent_style = space
+indent_size = 4
+
+[*.{ps1,psd,psm1}]
+charset = utf-8-bom
+
+[*.{bat,cmd}]
+# not supported gbk and gb2312 in editorconfig
+# charset = gbk
+end_of_line = crlf
+
+[*.md]
+indent_style = space
+indent_size = 2
+# 行尾两个空格是 Markdown 硬换行语法，不做裁剪
+trim_trailing_whitespace = false
+
+[*.sh]
+indent_style = space
+indent_size = 2

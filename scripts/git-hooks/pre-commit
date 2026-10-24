@@ -1,0 +1,133 @@
+#!/usr/bin/env bash
+# pre-commit 钩子：提交前对暂存的 C/C++ 文件执行
+#   1. clang-format 格式检查（可自动修复）
+#   2. clang-tidy 静态检查（依赖 build*/compile_commands.json，缺失则跳过）
+#   3. 文件头 Doxygen @file 注释检查（naming_convention.md §2.1）
+# 任一检查未通过则阻止提交；应急通道：git commit --no-verify
+set -u
+
+REPO_ROOT="$(git rev-parse --show-toplevel)" || exit 1
+cd "$REPO_ROOT" || exit 1
+
+# ---- 工具探测：优先 LLVM 23 配对，逐级回退 ----
+find_tool() {
+    local base="$1" cand
+    for cand in "$base-23" "$base-22" "$base-21" "$base"; do
+        command -v "$cand" >/dev/null 2>&1 && { printf '%s' "$cand"; return 0; }
+    done
+    return 1
+}
+
+FMT="$(find_tool clang-format)" || { echo "错误：未找到 clang-format" >&2; exit 1; }
+TIDY="$(find_tool clang-tidy)" || TIDY=""
+
+RED='\033[31m'; GREEN='\033[32m'; YELLOW='\033[33m'; OFF='\033[0m'
+EXIT_CODE=0
+
+# ---- 收集暂存的 C/C++ 文件（排除构建目录/第三方/适配层/moc 产物）----
+# src/adapters/ 为第三方 API 直接调用目录，命名豁免见 src/adapters/.clang-tidy
+mapfile -t FILES < <(git diff --cached --name-only --diff-filter=ACMR -- \
+    '*.h' '*.hpp' '*.hh' '*.cpp' '*.cxx' '*.cc' \
+    | grep -Ev '(^|/)(build[^/]*|third_party|adapters)/|(^|/)(moc_|ui_|qrc_)' || true)
+
+if [ "${#FILES[@]}" -eq 0 ]; then
+    exit 0
+fi
+echo "pre-commit：检查 ${#FILES[@]} 个 C/C++ 文件..."
+
+# ---- 1. clang-format 检查（针对暂存内容）----
+FORMAT_FIXED=()
+FORMAT_DIRTY=()   # 需修复，但暂存区与工作区不一致，不能代为修改
+for f in "${FILES[@]}"; do
+    [ -f "$f" ] || continue
+    if ! git show ":$f" | "$FMT" --style=file --assume-filename="$REPO_ROOT/$f" \
+        2>/dev/null | diff -q - <(git show ":$f") >/dev/null 2>&1; then
+        # 暂存内容不符合格式：仅当工作区与暂存区一致时才代为修复重暂存，
+        # 否则会把用户不想提交的未暂存改动一并暂存
+        if git diff --quiet -- "$f" 2>/dev/null; then
+            "$FMT" --style=file -i "$f"
+            git add -- "$f"
+            FORMAT_FIXED+=("$f")
+        else
+            FORMAT_DIRTY+=("$f")
+        fi
+    fi
+done
+
+if [ "${#FORMAT_FIXED[@]}" -gt 0 ]; then
+    EXIT_CODE=1
+    echo -e "${YELLOW}clang-format：以下文件已自动修复并重新暂存，请确认后重新提交：${OFF}"
+    printf '  %s\n' "${FORMAT_FIXED[@]}"
+fi
+if [ "${#FORMAT_DIRTY[@]}" -gt 0 ]; then
+    EXIT_CODE=1
+    echo -e "${RED}clang-format：以下文件暂存内容不符合格式（存在未暂存改动，不便代改）：${OFF}"
+    printf '  %s\n' "${FORMAT_DIRTY[@]}"
+    echo "建议：执行 clang-format -i <文件> 后用 git add 重新暂存。"
+fi
+
+# ---- 2. clang-tidy 检查 ----
+DB=""
+for d in build build-*; do
+    [ -s "$d/compile_commands.json" ] && DB="$d/compile_commands.json" && break
+done
+
+if [ -z "$TIDY" ]; then
+    echo -e "${YELLOW}clang-tidy：未安装，跳过静态检查。${OFF}"
+elif [ -z "$DB" ]; then
+    echo -e "${YELLOW}clang-tidy：未找到 compile_commands.json，本次跳过静态检查。${OFF}"
+    echo "生成方法：cmake -S . -B build"
+else
+    TIDY_FAILED=()
+    for f in "${FILES[@]}"; do
+        [ -f "$f" ] || continue
+        # 新建文件尚未进入编译数据库时 clang-tidy 无法分析，跳过并提示
+        if ! grep -qF "/$f\"" "$DB" 2>/dev/null; then
+            echo -e "${YELLOW}clang-tidy：$f 不在编译数据库中，本次跳过（cmake 重新 configure 后生效）。${OFF}"
+            continue
+        fi
+        OUTPUT="$("$TIDY" -p "$(dirname "$DB")" --quiet "$f" 2>&1)"
+        if printf '%s' "$OUTPUT" | grep -q 'warning:'; then
+            TIDY_FAILED+=("$f")
+            echo -e "${RED}clang-tidy：$f 存在告警：${OFF}"
+            printf '%s\n' "$OUTPUT"
+        fi
+    done
+    if [ "${#TIDY_FAILED[@]}" -gt 0 ]; then
+        EXIT_CODE=1
+        echo "clang-tidy 修改建议："
+        echo "  - 命名问题按 naming_convention.md §1 调整；"
+        echo "  - 覆写 Qt 虚函数保留原名，行前加 // NOLINTNEXTLINE(readability-identifier-naming)；"
+        echo "  - 确认为误报的告警可在行内加 // NOLINT(<检查名>) 并注明原因。"
+    fi
+fi
+
+# ---- 3. 文件头 Doxygen @file 注释检查（naming_convention.md §2.1）----
+NO_ATFILE=()
+for f in "${FILES[@]}"; do
+    [ -f "$f" ] || continue
+    if ! git show ":$f" 2>/dev/null | sed -n '1,40p' | grep -q '@file'; then
+        NO_ATFILE+=("$f")
+    fi
+done
+if [ "${#NO_ATFILE[@]}" -gt 0 ]; then
+    EXIT_CODE=1
+    echo -e "${RED}Doxygen：以下文件缺少文件头注释（须含 @file，见 naming_convention.md §2.1）：${OFF}"
+    printf '  %s\n' "${NO_ATFILE[@]}"
+    cat <<'EOF'
+文件头模板：
+/**
+ * @file <文件名>
+ * @brief <一句话说明>。
+ * @details <必要补充>。
+ */
+EOF
+fi
+
+# ---- 结论 ----
+if [ "$EXIT_CODE" -ne 0 ]; then
+    echo -e "${RED}提交被阻止：请先修复上述问题（或确认无误后 git commit --no-verify 跳过本次检查）。${OFF}"
+else
+    echo -e "${GREEN}pre-commit 检查通过。${OFF}"
+fi
+exit "$EXIT_CODE"
