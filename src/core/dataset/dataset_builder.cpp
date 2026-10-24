@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <map>
+#include <ranges>
 #include <set>
 
 namespace opensuperdea::dataset
@@ -19,23 +20,21 @@ namespace
 /** @brief 表头中查找列名，返回索引；不存在返回 npos。 */
 std::optional<std::size_t> find_column(const CsvTable &table, const std::string &name)
 {
-    for (std::size_t index = 0; index < table.headers.size(); ++index)
+    const auto found = std::ranges::find(table.headers, name);
+    if (found == table.headers.end())
     {
-        if (table.headers[index] == name)
-        {
-            return index;
-        }
+        return std::nullopt;
     }
-    return std::nullopt;
+    return static_cast<std::size_t>(found - table.headers.begin());
 }
 
-/** @brief 按前缀收集列名（保持表头顺序）；前缀匹配用 rfind(0) 兼容 C++17。 */
+/** @brief 按前缀收集列名（保持表头顺序）。 */
 std::vector<std::string> columns_with_prefix(const CsvTable &table, std::string_view prefix)
 {
     std::vector<std::string> matched;
     for (const auto &header : table.headers)
     {
-        if (header.rfind(prefix, 0) == 0)
+        if (header.starts_with(prefix))
         {
             matched.emplace_back(header);
         }
@@ -54,8 +53,12 @@ void check_explicit_columns(const CsvTable &table, const std::vector<std::string
         {
             std::string message;
             message.append(role_label).append("覆写列不存在: ").append(name);
-            errors.push_back({"V-003", file_path, 0, name, std::move(message),
-                              "检查 --inputs/--outputs 列名拼写"});
+            errors.push_back({.rule_id = "V-003",
+                              .file = file_path,
+                              .line = 0,
+                              .column = name,
+                              .message = std::move(message),
+                              .hint = "检查 --inputs/--outputs 列名拼写"});
         }
     }
 }
@@ -103,7 +106,12 @@ Dataset build_dataset(const CsvTable &table, const ColumnRoles &roles, const std
     const auto dmu_index = find_column(table, "dmu");
     if (!dmu_index.has_value())
     {
-        errors.push_back({"V-003", file_path, 0, "dmu", "dmu 列缺失于表头", "首列命名为 dmu"});
+        errors.push_back({.rule_id = "V-003",
+                          .file = file_path,
+                          .line = 0,
+                          .column = "dmu",
+                          .message = "dmu 列缺失于表头",
+                          .hint = "首列命名为 dmu"});
         return Dataset{};
     }
     const std::size_t dmu_count = table.rows.size();
@@ -122,8 +130,12 @@ Dataset build_dataset(const CsvTable &table, const ColumnRoles &roles, const std
         const auto column_index = find_column(table, name);
         if (!column_index.has_value())
         {
-            errors.push_back(
-                {"V-003", file_path, 0, name, "投入列缺失于表头", "检查列名拼写与 --inputs 覆写"});
+            errors.push_back({.rule_id = "V-003",
+                              .file = file_path,
+                              .line = 0,
+                              .column = name,
+                              .message = "投入列缺失于表头",
+                              .hint = "检查列名拼写与 --inputs 覆写"});
             return Dataset{};
         }
         input_indices.push_back(*column_index);
@@ -135,8 +147,12 @@ Dataset build_dataset(const CsvTable &table, const ColumnRoles &roles, const std
         const auto column_index = find_column(table, name);
         if (!column_index.has_value())
         {
-            errors.push_back(
-                {"V-003", file_path, 0, name, "产出列缺失于表头", "检查列名拼写与 --outputs 覆写"});
+            errors.push_back({.rule_id = "V-003",
+                              .file = file_path,
+                              .line = 0,
+                              .column = name,
+                              .message = "产出列缺失于表头",
+                              .hint = "检查列名拼写与 --outputs 覆写"});
             return Dataset{};
         }
         output_indices.push_back(*column_index);
@@ -168,8 +184,12 @@ Dataset build_dataset(const CsvTable &table, const ColumnRoles &roles, const std
             const auto column_index = find_column(table, name);
             if (!column_index.has_value())
             {
-                errors.push_back(
-                    {"V-003", file_path, 0, name, "方向输入列缺失于表头", "检查 di_ 前缀列名"});
+                errors.push_back({.rule_id = "V-003",
+                                  .file = file_path,
+                                  .line = 0,
+                                  .column = name,
+                                  .message = "方向输入列缺失于表头",
+                                  .hint = "检查 di_ 前缀列名"});
                 return Dataset{};
             }
             direction_in_indices.push_back(*column_index);
@@ -181,8 +201,12 @@ Dataset build_dataset(const CsvTable &table, const ColumnRoles &roles, const std
             const auto column_index = find_column(table, name);
             if (!column_index.has_value())
             {
-                errors.push_back(
-                    {"V-003", file_path, 0, name, "方向产出列缺失于表头", "检查 do_ 前缀列名"});
+                errors.push_back({.rule_id = "V-003",
+                                  .file = file_path,
+                                  .line = 0,
+                                  .column = name,
+                                  .message = "方向产出列缺失于表头",
+                                  .hint = "检查 do_ 前缀列名"});
                 return Dataset{};
             }
             direction_out_indices.push_back(*column_index);
@@ -221,15 +245,23 @@ PanelData build_panel(const CsvTable &table, const ColumnRoles &roles, const std
 {
     if (!roles.period_column.has_value() || roles.dmu_column.empty())
     {
-        errors.push_back({"V-003", file_path, 0, "period", "面板数据需同时存在 dmu 与 period 列",
-                          "长表 schema 见 design_docs/02 册 §2.3"});
+        errors.push_back({.rule_id = "V-003",
+                          .file = file_path,
+                          .line = 0,
+                          .column = "period",
+                          .message = "面板数据需同时存在 dmu 与 period 列",
+                          .hint = "长表 schema 见 design_docs/02 册 §2.3"});
         return PanelData{};
     }
     const auto period_index = find_column(table, *roles.period_column);
     if (!period_index.has_value())
     {
-        errors.push_back({"V-003", file_path, 0, "period", "period 列缺失于表头",
-                          "长表 schema 见 design_docs/02 册 §2.3"});
+        errors.push_back({.rule_id = "V-003",
+                          .file = file_path,
+                          .line = 0,
+                          .column = "period",
+                          .message = "period 列缺失于表头",
+                          .hint = "长表 schema 见 design_docs/02 册 §2.3"});
         return PanelData{};
     }
 
@@ -264,8 +296,7 @@ PanelData build_panel(const CsvTable &table, const ColumnRoles &roles, const std
     {
         for (const auto &name : panel.sections[period].dmu_names)
         {
-            if (std::find(panel.dmu_names.begin(), panel.dmu_names.end(), name) ==
-                panel.dmu_names.end())
+            if (std::ranges::find(panel.dmu_names, name) == panel.dmu_names.end())
             {
                 panel.dmu_names.push_back(name);
             }

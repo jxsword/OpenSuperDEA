@@ -15,7 +15,7 @@
 
 | 层 | 选型 | 备注 |
 |---|---|---|
-| 语言 | C++17（当前骨架，CMakeLists 现状）→ **C++20（引擎实现期规划）** | 升级需同步评估 naming_convention.md 与 .clang-tidy 约束 |
+| 语言 | **C++20**（DR-007，2026-10-24 用户确认，M2 首分支执行；M1 v0.1.0 为 C++17 基线） | naming_convention/.clang-tidy 评估无需修改 |
 | 构建 | CMake（当前 3.16+，target `opensuperdea`） | 项目级变量/选项前缀 `OPENSUPERDEA_` |
 | GUI | Qt 6（Widgets，骨架已移入 tmp/gui_skeleton/，M6 恢复；恢复步骤见该目录 README.md） | AUTOMOC/AUTOUIC/AUTORCC 已开 |
 | 依赖管理 | vcpkg（manifest 模式，M1 引入） | |
