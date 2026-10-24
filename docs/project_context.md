@@ -120,6 +120,7 @@ MinDS、FDEF、博弈交叉效率（Nash）、EBM、HMB、Cluster 8 基准、AR/
 
 0. **需求工程阶段完成（2026-10-24，DR-005/006）**：SRS V1.0 定稿于 design_docs/00_srs.md（23 模块/116 FR/21 NFR）；设计分册 01-05 就绪。M2+ 算法设计册（06+）启动时产出。
 0.5 **M1 完成（2026-10-24，v0.1.0）**：六任务验收通过；Git Flow 实跑（3 feature 分支 no-ff 合入）；33 单元测试全绿；三段式 CI 全绿（WSL / Actions Linux / Actions Windows，run 40107184884）；远程 github.com/jxsword/OpenSuperDEA 已建 main+develop+v0.1.0。CI 修复沉淀：workflow env 不可引用 runner 系统变量（用官方固定路径）、PowerShell 调用 bat 需 `& "${env:VAR}\..."`、MSVC 需 /W4 /utf-8（中文注释必需）。测试报告 design_docs/reports/m1_test_report.md。
+0.7 **C++20 基线 + M2 设计册完成（2026-10-25，DR-007）**：CMAKE_CXX_STANDARD 20（指定初始化器/ranges/starts_with 已现代化，零告警）；M2 实现蓝本 design_docs/06_m2_engine_design.md 已确认。**M2 新会话启动提示词：tmp/zcode_2_m2.md（新会话首条消息粘贴该文件全文，或指示 zcode 显式读取该路径）。**
 1. 项目根已备好：AGENTS.md、naming_convention.md、.clang-format/.clang-tidy、CMakeLists.txt、CLI 占位骨架（src/main.cpp，已构建验证通过）；Qt6 GUI 骨架已移入 tmp/gui_skeleton/（M6 恢复）。
 2. M1 内容：引入 vcpkg（manifest）+ Eigen + HiGHS；CLI 框架（CLI11）；数据 IO（CSV）；三段式 CI（.github/workflows）；把 src/adapters/ 填充为求解器/数据适配层。
 3. 依赖现状：当前无外部依赖（CLI 占位）；Eigen/HiGHS/CLI11 未安装（vcpkg 引入）；Qt6 为 M6 恢复引入。
