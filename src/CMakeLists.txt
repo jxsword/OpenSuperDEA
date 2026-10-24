@@ -7,6 +7,16 @@ add_library(opensuperdea_core STATIC
     core/dataset/dataset.cpp
     core/dataset/dataset_builder.cpp
     core/dataset/validator.cpp
+    core/radial/multiplier_model.cpp
+    core/radial/radial_envelope_model.cpp
+    core/radial/scale_efficiency_model.cpp
+    core/registry/model_registry.cpp
+    core/registry/model_runner.cpp
+    core/registry/reference_set.cpp
+    core/registry/solve_options.cpp
+    core/result/dmu_result.cpp
+    core/result/result_exporter.cpp
+    core/util/sha1.cpp
 )
 
 # 引擎头以 src/ 为根（#include "core/..." / "adapters/..."），对测试与未来 GUI 复用开放

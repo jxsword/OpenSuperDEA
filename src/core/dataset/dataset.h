@@ -47,6 +47,11 @@ struct Dataset
     std::optional<PriceData> prices;
     std::optional<WeightData> weights;
 
+    // 列名（in_*/out_* 或 CLI 覆写名；02 册 §4.2 JSON 键与 CSV 列名来源；
+    // 程序内直接构造的测试数据可留空，导出器回退 in_N/out_N）
+    std::vector<std::string> input_names;
+    std::vector<std::string> output_names;
+
     /** @brief DMU 数量。 */
     [[nodiscard]] std::size_t dmu_count() const;
     /** @brief 投入维数。 */

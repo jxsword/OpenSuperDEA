@@ -119,6 +119,8 @@ Dataset build_dataset(const CsvTable &table, const ColumnRoles &roles, const std
     const std::size_t s = roles.output_columns.size();
 
     Dataset dataset;
+    dataset.input_names = roles.input_columns;
+    dataset.output_names = roles.output_columns;
     dataset.inputs.resize(static_cast<Eigen::Index>(dmu_count), static_cast<Eigen::Index>(m));
     dataset.outputs.resize(static_cast<Eigen::Index>(dmu_count), static_cast<Eigen::Index>(s));
 

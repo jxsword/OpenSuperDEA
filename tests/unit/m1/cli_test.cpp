@@ -66,11 +66,12 @@ TEST(CliApp, FR_CLI_007_InvalidModelExitsArgCode)
     EXPECT_EQ(code, 1); // EXIT_ARG
 }
 
-TEST(CliApp, FR_CLI_007_RunPlaceholderReportsNotImplemented)
+TEST(CliApp, FR_CLI_003_RunCcrExitsZeroAfterRegistryLanding)
 {
+    // M1 阶段该路径为占位（EXIT_ARG）；M2 注册表落地后 run ccr 全链路成功
     const std::string path = golden_path("toy_cross/data.csv");
     const int code = run_with({"run", "--model", "ccr", "--data", path});
-    EXPECT_EQ(code, 1);
+    EXPECT_EQ(code, 0);
 }
 
 TEST(CliApp, FR_CLI_007_MissingFileExitsDataCode)
