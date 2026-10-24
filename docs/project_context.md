@@ -9,7 +9,7 @@
 - **目标**：用 AI Agent（Zcode）+ C++ 全量实现商业软件 MaxDEA X 全部功能，项目代号 OpenSuperDEA。
 - **覆盖范围**：常规模型族 + 10 项独有算法（在线平台与开源工具均未实现）+ 万级 DMU 极速求解。
 - **形态**：CLI 先行（M1-M5）→ GUI 后置（M6，Qt6）；支持 Ubuntu（WSL）/ Windows，macOS 后期扩展。
-- **当前状态**：M0 预研完成；需求工程阶段完成（2026-10-24：SRS V1.0 定稿 + 详细设计分册，见 §8.0）；M1 工程底座待启动。
+- **当前状态**：M0 预研完成；需求工程阶段完成（SRS V1.0 + 设计分册，见 §8.0）；**M1 工程底座完成并验收（2026-10-24，v0.1.0，三段式 CI 全绿）**；M2 常规引擎待启动（C++20 升级评估已出待确认）。
 
 ## 2. 技术栈决策（已论证，勿推翻）
 
@@ -116,9 +116,10 @@ MinDS、FDEF、博弈交叉效率（Nash）、EBM、HMB、Cluster 8 基准、AR/
 - 复杂技术任务要求：AGENTS.md 全局约束、Git Flow 分步提交、多阶段验收清单、URL 必须核实可访问性并提供官方原文链接。
 - 开发决策已锁定项：C++20 规划 / HiGHS / Qt6 / vcpkg / GitHub Actions 三段 CI / CLI 先行。
 
-## 8. 下一步（M1 启动清单）
+## 8. 下一步（M2 启动清单）
 
-0. **需求工程阶段完成（2026-10-24，DR-005/006）**：SRS V1.0 定稿于 design_docs/00_srs.md（23 模块/116 FR/21 NFR，14 项裁决清零，性能达标线 = 官方 ×1.2）；配套 00a 拆解清单、00b 审核记录；详细设计分册 01（总体）/02（数据）/03（M1）/04（验证测试）/05（Git Flow）就绪。后续开发以 SRS 为需求基线、05 册为流程规范（瀑布·阶段门禁：每里程碑测试全绿 + 用户验收才进下一步；push 每里程碑收尾授权一次）。M2+ 各里程碑算法设计册（06+）在其启动时产出。
+0. **需求工程阶段完成（2026-10-24，DR-005/006）**：SRS V1.0 定稿于 design_docs/00_srs.md（23 模块/116 FR/21 NFR）；设计分册 01-05 就绪。M2+ 算法设计册（06+）启动时产出。
+0.5 **M1 完成（2026-10-24，v0.1.0）**：六任务验收通过；Git Flow 实跑（3 feature 分支 no-ff 合入）；33 单元测试全绿；三段式 CI 全绿（WSL / Actions Linux / Actions Windows，run 40107184884）；远程 github.com/jxsword/OpenSuperDEA 已建 main+develop+v0.1.0。CI 修复沉淀：workflow env 不可引用 runner 系统变量（用官方固定路径）、PowerShell 调用 bat 需 `& "${env:VAR}\..."`、MSVC 需 /W4 /utf-8（中文注释必需）。测试报告 design_docs/reports/m1_test_report.md。
 1. 项目根已备好：AGENTS.md、naming_convention.md、.clang-format/.clang-tidy、CMakeLists.txt、CLI 占位骨架（src/main.cpp，已构建验证通过）；Qt6 GUI 骨架已移入 tmp/gui_skeleton/（M6 恢复）。
 2. M1 内容：引入 vcpkg（manifest）+ Eigen + HiGHS；CLI 框架（CLI11）；数据 IO（CSV）；三段式 CI（.github/workflows）；把 src/adapters/ 填充为求解器/数据适配层。
 3. 依赖现状：当前无外部依赖（CLI 占位）；Eigen/HiGHS/CLI11 未安装（vcpkg 引入）；Qt6 为 M6 恢复引入。
