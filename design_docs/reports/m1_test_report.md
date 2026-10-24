@@ -12,7 +12,7 @@
 | 3 | CLI 框架（CLI11） | `version`/`--version` 输出 v0.1.0；`check`/`run` 子命令解析正确；退出码规范 0/1/2（FR-CLI-007 测试断言） | ✅ |
 | 4 | CSV 数据 IO | toy_cross 读入 `dataset: 4 DMU, 2 投入, 1 产出`；toy_panel `panel: 2 期次, 3 DMU`；缺列/非数值/空数据三类错误带 `文件:行:列 规则 提示`（V-002~V-005 用例） | ✅ |
 | 5 | 核心数据结构 | Dataset/PanelData/Direction/Price/Weight（Eigen）+ ModelResult 契约（02 册）；存取/序列化往返测试通过 | ✅ |
-| 6 | 三段式 CI + 测试框架 | GoogleTest 33 用例全绿（本地 WSL 段）；ci.yml（Linux→Windows needs 门禁 + vcpkg 缓存）入库；**Actions 两段待 push 后补证** | ✅（CI 远程段待授权） |
+| 6 | 三段式 CI + 测试框架 | GoogleTest 33 用例全绿（本地 WSL 段）；ci.yml（Linux→Windows needs 门禁 + vcpkg 缓存）入库；**Actions 双平台全绿**（run 40107184884：https://github.com/jxsword/OpenSuperDEA/actions/runs/40107184884） | ✅ |
 
 ## 2. 测试统计
 
@@ -37,9 +37,9 @@
 
 - `run --model ccr` 为占位（数据链路全通，模型执行提示 M2 提供）——03 册 §3.1 设计行为；
 - 价格/权重列（pi_/po_/w_）读入与校验规则 V-008/V-010 属 M2 交付；
-- Actions Linux/Windows 两段 CI 未执行（push 禁令，待用户授权后补证）。
+- ~~Actions 两段未执行~~ 已补证：经 3 轮修复（workflow env context 非法引用、PowerShell bootstrap 语法、MSVC /W4 /utf-8）后双平台全绿。
 
 ## 5. 结论
 
 M1 工程底座六任务全部达成，本地门禁全绿，具备进入 M2（常规引擎）的条件。
-**待用户验收 + 授权 push**（P-003：触发 Actions Linux → Windows，补齐三段式 CI 后两个远程段证据）。
+用户已验收并授权 push（2026-10-24）：三段式 CI 全绿闭环（WSL 本地 ✅ / Actions Linux ✅ / Actions Windows ✅），tag v0.1.0 指向 CI 全绿 commit。
