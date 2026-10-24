@@ -48,3 +48,11 @@
 - 理由: 14 项建议均与既有里程碑路线、四层验证体系、许可边界一致，无新增不可逆风险。
 - 影响: design_docs/00_srs.md（V1.0）、00a、00b；阶段二详细设计（01-05 分册）依据
 - 记录时间 / 会话: 2026-10-24 / ZCode 需求工程会话
+
+## DR-007 2026-10-24 C++17 → C++20 升级于 M2 首分支执行  [状态: 生效]
+- 背景: SRS C-01（P-005 裁决）约定 C++20 升级时点在 M2 启动评估并经用户确认；升级评估（tmp/cpp20_upgrade_assessment.md）呈报优势与风险后用户确认升级。
+- 选项与权衡: M2 首分支即切 C++20(锁定 concepts/指定初始化器/span/jthread 收益，避免 M2 接口返工，采用)；M4 性能期再切(模型注册表用 SFINAE 写一遍后返工，弃用)；保持 C++17(放弃 M2-M4 核心收益，弃用)。
+- 结论: CMAKE_CXX_STANDARD 17→20（一行）；naming_convention.md 与 .clang-tidy 评估结论为无需修改（无标准版本绑定）；确定性成本为 modernize-use-designated-initializers 对 M1 约 10 处位置初始化的一次性批量修复（随升级分支完成）；SRS C-01 升 V1.1。
+- 理由: 三编译器矩阵（GCC 16/13、MSVC 19.4x）C++20 完整支持；vcpkg 四库均兼容；净风险半小时批量修复 vs M2 架构核心（concepts 注册表）与 M3/M4 前置（span/jthread）收益。
+- 影响: CMakeLists.txt、SRS V1.1（C-01）、M2 设计册 06（接口按 C++20 设计）、.clang-tidy（新增 designated-initializers 修复）
+- 记录时间 / 会话: 2026-10-24 / ZCode M1-M2 会话

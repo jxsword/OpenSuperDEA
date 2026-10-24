@@ -12,11 +12,11 @@ namespace opensuperdea::dataset
 {
 namespace
 {
-/** @brief 跳过 UTF-8 BOM（EF BB BF）；starts_with 为 C++20 API，此处手工比较。 */
+/** @brief 跳过 UTF-8 BOM（EF BB BF）。 */
 std::string_view strip_bom(std::string_view text)
 {
     constexpr std::string_view BOM = "\xEF\xBB\xBF";
-    if (text.size() >= BOM.size() && text.substr(0, BOM.size()) == BOM)
+    if (text.starts_with(BOM))
     {
         text.remove_prefix(BOM.size());
     }
