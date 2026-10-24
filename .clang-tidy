@@ -12,11 +12,14 @@ Checks: '
   -modernize-use-trailing-return-type,
   google-*,
   -google-build-header-guard,
+  -google-readability-avoid-underscore-in-googletest-name,
   readability-*,
   -readability-magic-numbers,
   -readability-function-cognitive-complexity,
   -readability-implicit-bool-conversion,
   -readability-static-accessed-through-instance,
+  -readability-identifier-length,
+  -readability-trailing-comma,
   readability-identifier-naming
 '
 
@@ -30,12 +33,21 @@ Checks: '
 # + google-*                Google 风格中与本文档不冲突的部分（显式单参构造、
 #                           头文件全局命名空间等）
 # - google-build-header-guard              本文档未约定头文件守卫格式，避免强推路径式命名
+# - google-readability-avoid-underscore-in-googletest-name
+#                                          测试用例名按 FR 追溯约定 TEST(Suite, FR_XXX_Case)
+#                                          （design_docs/04 册 §7，NFR-MAINT-003）必然含下划线，
+#                                          该检查与项目追溯约定冲突，关闭
 # + readability-identifier-naming          命名强制，规则见下（对应文档 §1）
 # - readability-magic-numbers              DEA 算法代码含大量数值常数，噪音过大
 # - readability-function-cognitive-complexity  复杂度阈值告警属重构建议，不作提交门禁
 # - readability-implicit-bool-conversion   与 Qt 隐式布尔用法冲突，噪音
 # - readability-static-accessed-through-instance  Qt 惯用 app.exec()/QApplication::exec()
 #                                          经实例访问静态成员是 Qt 生态常态，误报
+# - readability-identifier-length          迭代器惯用名（it）与 DEA 数学记号（m 投入数/
+#                                          s 产出数/n DMU 数）是领域标准，长度限制纯噪音
+# - readability-trailing-comma             多行初始化列表尾逗号强制与 LLVM 21/23 版本行为
+#                                          不一致（23 对多行聚合初始化报错且 -fix 不生效），
+#                                          机械噪音大于收益，关闭
 
 # ---- 命名规则（对应 naming_convention.md §1.1-§1.6）----
 CheckOptions:
