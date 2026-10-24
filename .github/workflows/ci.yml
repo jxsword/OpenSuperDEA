@@ -45,7 +45,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Bootstrap vcpkg（runner 预装）
-        run: $env:VCPKG_ROOT\bootstrap-vcpkg.bat
+        run: '& "${env:VCPKG_ROOT}\bootstrap-vcpkg.bat"'
 
       - name: vcpkg 二进制缓存
         uses: actions/cache@v4
