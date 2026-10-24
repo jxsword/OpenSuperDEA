@@ -1265,6 +1265,194 @@
       "compare": {
         "score": "efficiency"
       }
+    },
+    {
+      "name": "toy_cross_cross_dg_i_crs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "cross_efficiency",
+        "orientation": "in",
+        "rts": "crs",
+        "method": "dg_i"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_cross.R",
+        "args": [
+          "crs",
+          "dg_i"
+        ]
+      },
+      "compare": {
+        "score": "e"
+      }
+    },
+    {
+      "name": "toy_cross_cross_dg_ii_crs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "cross_efficiency",
+        "orientation": "in",
+        "rts": "crs",
+        "method": "dg_ii"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_cross.R",
+        "args": [
+          "crs",
+          "dg_ii"
+        ]
+      },
+      "compare": {
+        "score": "e"
+      }
+    },
+    {
+      "name": "toy_cross_cross_m3_i_crs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "cross_efficiency",
+        "orientation": "in",
+        "rts": "crs",
+        "method": "m3_i"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_cross.R",
+        "args": [
+          "crs",
+          "m3_i"
+        ]
+      },
+      "compare": {
+        "score": "e"
+      }
+    },
+    {
+      "name": "toy_cross_cross_m3_ii_crs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "cross_efficiency",
+        "orientation": "in",
+        "rts": "crs",
+        "method": "m3_ii"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_cross.R",
+        "args": [
+          "crs",
+          "m3_ii"
+        ]
+      },
+      "compare": {
+        "score": "e"
+      }
+    },
+    {
+      "name": "toy_cross_cross_dg_i_vrs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "cross_efficiency",
+        "orientation": "in",
+        "rts": "vrs",
+        "method": "dg_i"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_cross.R",
+        "args": [
+          "vrs",
+          "dg_i"
+        ]
+      },
+      "compare": {
+        "score": "e"
+      }
+    },
+    {
+      "name": "toy_cross_cross_dg_ii_vrs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "cross_efficiency",
+        "orientation": "in",
+        "rts": "vrs",
+        "method": "dg_ii"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_cross.R",
+        "args": [
+          "vrs",
+          "dg_ii"
+        ]
+      },
+      "compare": {
+        "score": "e"
+      }
+    },
+    {
+      "name": "toy_cross_cross_m3_i_vrs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "cross_efficiency",
+        "orientation": "in",
+        "rts": "vrs",
+        "method": "m3_i"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_cross.R",
+        "args": [
+          "vrs",
+          "m3_i"
+        ]
+      },
+      "compare": {
+        "score": "e"
+      }
+    },
+    {
+      "name": "toy_cross_cross_m3_ii_vrs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "cross_efficiency",
+        "orientation": "in",
+        "rts": "vrs",
+        "method": "m3_ii"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_cross.R",
+        "args": [
+          "vrs",
+          "m3_ii"
+        ]
+      },
+      "compare": {
+        "score": "e"
+      }
+    },
+    {
+      "name": "toy_panel_malmquist_crs",
+      "data": "../golden/toy_panel/data.csv",
+      "product": {
+        "model": "malmquist",
+        "orientation": "in",
+        "rts": "crs",
+        "panel": true
+      },
+      "reference": {
+        "tool": "productivity",
+        "script": "refimpl/productivity_malm.R",
+        "args": [
+          "crs"
+        ]
+      },
+      "compare": {
+        "score": "malmquist"
+      }
     }
   ]
 }

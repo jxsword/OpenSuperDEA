@@ -10,6 +10,7 @@
 
 #include <CLI/CLI.hpp>
 
+#include "core/cross/cross_efficiency.h"
 #include "core/dataset/csv_parser.h"
 #include "core/dataset/dataset_builder.h"
 #include "core/dataset/validator.h"
@@ -19,7 +20,9 @@
 #include "core/registry/model_runner.h"
 #include "core/registry/solve_options.h"
 #include "core/result/result_exporter.h"
+#include "core/tfp/malmquist.h"
 #include "core/util/sha1.h"
+#include "core/window/window_analysis.h"
 #include "exit_codes.h"
 
 #include <algorithm>
@@ -144,6 +147,55 @@ int run_check(const std::string &data_path, bool as_panel,
     return EXIT_OK;
 }
 
+/** @brief 逗号分隔数值列表解析（虚拟 DMU 向量；数量/数值非法即 EXIT_ARG）。 */
+std::vector<double> parse_number_list(const std::string &text, std::size_t expected_size,
+                                      std::ostream &err)
+{
+    std::vector<double> values;
+    std::string token;
+    std::istringstream stream(text);
+    while (std::getline(stream, token, ','))
+    {
+        try
+        {
+            std::size_t consumed = 0;
+            values.push_back(std::stod(token, &consumed));
+            if (consumed != token.size())
+            {
+                throw std::invalid_argument("tail");
+            }
+        }
+        catch (const std::exception &)
+        {
+            err << "[E1] args: 非法数值列表 \"" << text << "\"\n";
+            return {};
+        }
+    }
+    if (values.size() != expected_size)
+    {
+        err << "[E1] args: 数值列表元素数 " << values.size() << " 与期望 " << expected_size
+            << " 不一致\n";
+        return {};
+    }
+    return values;
+}
+
+/** @brief Malmquist 结果列集（unit_name + ec/tc）。 */
+registry::ResultColumnSpec malmquist_columns()
+{
+    registry::ResultColumnSpec spec;
+    spec.extra_columns = {"unit_name", "ec", "tc"};
+    return spec;
+}
+
+/** @brief 窗口分析结果列集（unit_name + window_start）。 */
+registry::ResultColumnSpec window_columns()
+{
+    registry::ResultColumnSpec spec;
+    spec.extra_columns = {"unit_name", "window_start"};
+    return spec;
+}
+
 /** @brief 数据文件 SHA-1 指纹（02 册 §4.2 data_sha1；文件已通过数据载入校验）。 */
 std::string file_sha1(const std::string &path)
 {
@@ -159,7 +211,7 @@ std::string file_sha1(const std::string &path)
 
 /** @brief 求解摘要打印（FR-CLI-003：逐 DMU 表 + 汇总 + 文件路径）。 */
 void print_run_summary(std::ostream &out, const result::ModelResult &model_result,
-                       const dataset::Dataset &data, const std::string &result_path)
+                       const std::vector<std::string> &row_names, const std::string &result_path)
 {
     const result::ResultMeta &meta = model_result.meta;
     out << "model=" << meta.model_id << " orientation=" << registry::to_string(meta.orientation)
@@ -169,7 +221,7 @@ void print_run_summary(std::ostream &out, const result::ModelResult &model_resul
     out << std::setprecision(10);
     for (const result::DmuResult &dmu : model_result.dmu_results)
     {
-        out << data.dmu_names[dmu.dmu_index] << ' ';
+        out << row_names[dmu.dmu_index] << ' ';
         if (dmu.has_score())
         {
             out << dmu.score;
@@ -188,14 +240,17 @@ void print_run_summary(std::ostream &out, const result::ModelResult &model_resul
 
 /**
  * @brief run 子命令（FR-CLI-003：解析 → 数据链路 → 注册表求解 → 导出）。
- * @details 面板模型（窗口/Malmquist）属 M2 分支 3，本阶段 run 拒绝 --panel；
- *          未知模型 / 非法组合 EXIT_ARG（错误提示含可用模型清单）。
+ * @details 分支 3 路由：--panel + malmquist → 相邻 Malmquist；--panel + --window w
+ *          → 窗口分析（底层模型 = --model）；cross_efficiency → 两阶段交叉效率；
+ *          其余截面模型走注册表逐 DMU 流水线。
  */
 int run_solve(const std::string &model_id, const std::string &data_path, bool as_panel,
               const std::vector<std::string> &explicit_inputs,
               const std::vector<std::string> &explicit_outputs, const std::string &orientation_text,
               const std::string &rts_text, bool rts_explicit, bool super_efficiency,
-              const std::string &direction, const std::string &format, const std::string &outdir,
+              const std::string &direction, const std::string &method,
+              const std::string &virtual_inputs_text, const std::string &virtual_outputs_text,
+              std::size_t window_width, const std::string &format, const std::string &outdir,
               std::ostream &out, std::ostream &err)
 {
     if (model_id.empty())
@@ -203,13 +258,113 @@ int run_solve(const std::string &model_id, const std::string &data_path, bool as
         err << "[E1] args: 缺少 --model\n";
         return EXIT_ARG;
     }
+    // ---- 面板路由（分支 3）：malmquist / --window w ----
     if (as_panel)
     {
-        // 面板模型（窗口分析/Malmquist）属 M2 分支 3；本阶段 run 仅消费截面
-        err << "[E1] args: run 暂不支持面板数据"
-            << " (hint: 窗口/Malmquist 属 M2 分支 3；check --panel 可先校验面板)\n";
-        return EXIT_ARG;
+        if (model_id != "malmquist" && window_width == 0)
+        {
+            err << "[E1] args: 面板数据仅支持 malmquist 或 --window w 窗口分析"
+                << " (hint: 逐 DMU 面板模型属 M5 参比族)\n";
+            return EXIT_ARG;
+        }
+        dataset::PanelData panel;
+        const int panel_status = load_and_build(data_path, true, explicit_inputs, explicit_outputs,
+                                                nullptr, &panel, err);
+        if (panel_status != EXIT_OK)
+        {
+            return panel_status;
+        }
+        registry::Orientation panel_orientation = registry::Orientation::INPUT;
+        if (!registry::orientation_from_string(orientation_text, panel_orientation))
+        {
+            err << "[E1] args: 非法定向 \"" << orientation_text << "\" (hint: in|out|non)\n";
+            return EXIT_ARG;
+        }
+        registry::Rts panel_rts = registry::Rts::CRS;
+        if (!registry::rts_from_string(rts_text, panel_rts))
+        {
+            err << "[E1] args: 非法规模报酬 \"" << rts_text << "\" (hint: crs|vrs|nirs|ndrs)\n";
+            return EXIT_ARG;
+        }
+        registry::SolveOptions panel_options;
+        panel_options.orientation = panel_orientation;
+        panel_options.rts = panel_rts;
+        registry::RunConfig panel_config;
+        panel_config.data_sha1 = file_sha1(data_path);
+        panel_config.version = VERSION_TEXT;
+
+        result::ModelResult panel_result;
+        try
+        {
+            if (model_id == "malmquist")
+            {
+                panel_result = tfp::run_malmquist(panel, panel_options, panel_config);
+            }
+            else
+            {
+                panel_result = window::run_window_analysis(panel, window_width, model_id,
+                                                           panel_options, panel_config);
+            }
+        }
+        catch (const registry::EngineException &exception)
+        {
+            err << "[E" << exception.exit_code() << "] " << exception.module() << ": "
+                << exception.what();
+            if (!exception.hint().empty())
+            {
+                err << " (hint: " << exception.hint() << ")";
+            }
+            err << '\n';
+            return exception.exit_code();
+        }
+
+        // 行名取 unit_name 标注（窗口/Malmquist 合成行）；列名取首期截面
+        std::vector<std::string> row_names;
+        row_names.reserve(panel_result.dmu_results.size());
+        for (const auto &dmu : panel_result.dmu_results)
+        {
+            row_names.push_back(dmu.annotations.at("unit_name"));
+        }
+        const dataset::Dataset &first_section = panel.sections.begin()->second;
+        result::ExportNames names{.row_names = row_names,
+                                  .input_names = first_section.input_names,
+                                  .output_names = first_section.output_names};
+
+        std::error_code panel_fs_error;
+        std::filesystem::create_directories(outdir, panel_fs_error);
+        if (panel_fs_error)
+        {
+            err << "[E1] args: 输出目录不可创建 \"" << outdir
+                << "\" (hint: " << panel_fs_error.message() << ")\n";
+            return EXIT_ARG;
+        }
+        const std::string panel_ext = format == "csv" ? "csv" : "json";
+        const std::string panel_path = (std::filesystem::path{outdir} /
+                                        result::result_filename(panel_result.meta, true, panel_ext))
+                                           .generic_string();
+        const registry::ResultColumnSpec panel_spec =
+            panel_result.meta.model_id == "malmquist" ? malmquist_columns() : window_columns();
+        try
+        {
+            if (format == "csv")
+            {
+                result::write_result_csv(panel_path, panel_result, names, panel_spec);
+            }
+            else
+            {
+                result::write_result_json(panel_path, panel_result, names, panel_spec);
+            }
+        }
+        catch (const registry::EngineException &exception)
+        {
+            err << "[E" << exception.exit_code() << "] " << exception.module() << ": "
+                << exception.what() << '\n';
+            return exception.exit_code();
+        }
+        print_run_summary(out, panel_result, names.row_names, panel_path);
+        return EXIT_OK;
     }
+
     registry::Orientation orientation = registry::Orientation::INPUT;
     if (!registry::orientation_from_string(orientation_text, orientation))
     {
@@ -277,7 +432,39 @@ int run_solve(const std::string &model_id, const std::string &data_path, bool as
     result::ModelResult model_result;
     try
     {
-        model_result = registry::run_model(model_id, data, options, config);
+        if (model_id == "cross_efficiency")
+        {
+            cross::CrossRunOptions cross_options;
+            cross_options.rts = rts;
+            const std::string method_text = method.empty() ? "dg_i" : method;
+            if (!cross::cross_method_from_string(method_text, cross_options.method))
+            {
+                err << "[E1] args: 非法交叉效率方法 \"" << method_text
+                    << "\" (hint: dg_i|dg_ii|m3_i|m3_ii|virtual)\n";
+                return EXIT_ARG;
+            }
+            if (cross_options.method == cross::CrossMethod::VIRTUAL_DMU)
+            {
+                cross_options.virtual_inputs =
+                    parse_number_list(virtual_inputs_text, data.input_count(), err);
+                cross_options.virtual_outputs =
+                    parse_number_list(virtual_outputs_text, data.output_count(), err);
+                if (cross_options.virtual_inputs.empty() || cross_options.virtual_outputs.empty())
+                {
+                    return EXIT_ARG;
+                }
+            }
+            model_result = cross::run_cross_efficiency(data, cross_options, config);
+        }
+        else
+        {
+            if (!method.empty())
+            {
+                err << "[E1] args: --method 仅适用于 cross_efficiency 模型\n";
+                return EXIT_ARG;
+            }
+            model_result = registry::run_model(model_id, data, options, config);
+        }
     }
     catch (const registry::EngineException &exception)
     {
@@ -309,11 +496,13 @@ int run_solve(const std::string &model_id, const std::string &data_path, bool as
     {
         if (format == "csv")
         {
-            result::write_result_csv(result_path, model_result, data, descriptor->columns);
+            result::write_result_csv(result_path, model_result,
+                                     result::ExportNames::from_dataset(data), descriptor->columns);
         }
         else
         {
-            result::write_result_json(result_path, model_result, data, descriptor->columns);
+            result::write_result_json(result_path, model_result,
+                                      result::ExportNames::from_dataset(data), descriptor->columns);
         }
     }
     catch (const registry::EngineException &exception)
@@ -323,7 +512,7 @@ int run_solve(const std::string &model_id, const std::string &data_path, bool as
         return exception.exit_code();
     }
 
-    print_run_summary(out, model_result, data, result_path);
+    print_run_summary(out, model_result, data.dmu_names, result_path);
     return EXIT_OK;
 }
 } // namespace
@@ -360,6 +549,10 @@ int run_cli(int argc, char **argv, std::ostream &out, std::ostream &err)
     std::string solve_orientation = "in";
     std::string solve_rts;       // 空串 = 未显式给出（默认 crs；非 rts 模型显式传入报错）
     std::string solve_direction; // 空串 = 未显式给出（ddf 默认 own）
+    std::string solve_method;    // 空串 = 未显式给出（cross 默认 dg_i）
+    std::string solve_virtual_inputs;
+    std::string solve_virtual_outputs;
+    std::string solve_window; // 空串 = 未显式给出（--panel + 底层模型时启用窗口）
     std::string solve_format = "csv";
     std::string solve_outdir = ".";
     bool solve_super = false;
@@ -375,6 +568,14 @@ int run_cli(int argc, char **argv, std::ostream &out, std::ostream &err)
     solve_cmd->add_option("--rts", solve_rts, "规模报酬 crs|vrs|nirs|ndrs（默认 crs）");
     solve_cmd->add_option("--direction", solve_direction,
                           "DDF 方向 own|mean|unit|custom|rdm（默认 own）");
+    solve_cmd->add_option("--method", solve_method,
+                          "交叉效率方法 dg_i|dg_ii|m3_i|m3_ii|virtual（默认 dg_i）");
+    solve_cmd->add_option("--virtual-inputs", solve_virtual_inputs,
+                          "虚拟 DMU 投入向量（逗号分隔，--method virtual）");
+    solve_cmd->add_option("--virtual-outputs", solve_virtual_outputs,
+                          "虚拟 DMU 产出向量（逗号分隔，--method virtual）");
+    solve_cmd->add_option("--window", solve_window,
+                          "窗口宽度 w（--panel + 底层模型时启用窗口分析）");
     solve_cmd->add_flag("--super", solve_super, "超效率（参考集剔除被评 DMU）");
     solve_cmd->add_option("--format", solve_format, "结果格式 csv|json（默认 csv）");
     solve_cmd->add_option("-o,--outdir", solve_outdir, "结果输出目录（默认当前目录）");
@@ -405,9 +606,23 @@ int run_cli(int argc, char **argv, std::ostream &out, std::ostream &err)
     if (run_solve_cmd)
     {
         const bool rts_explicit = !solve_rts.empty();
+        std::size_t window_width = 0;
+        if (!solve_window.empty())
+        {
+            try
+            {
+                window_width = static_cast<std::size_t>(std::stoul(solve_window));
+            }
+            catch (const std::exception &)
+            {
+                err << "[E1] args: 非法窗口宽度 \"" << solve_window << "\"\n";
+                return EXIT_ARG;
+            }
+        }
         return run_solve(solve_model, solve_data, solve_panel, solve_inputs, solve_outputs,
                          solve_orientation, rts_explicit ? solve_rts : "crs", rts_explicit,
-                         solve_super, solve_direction, solve_format, solve_outdir, out, err);
+                         solve_super, solve_direction, solve_method, solve_virtual_inputs,
+                         solve_virtual_outputs, window_width, solve_format, solve_outdir, out, err);
     }
     return EXIT_OK;
 }

@@ -40,62 +40,62 @@ std::string format_number(double value)
 }
 
 /** @brief 数据集投入列名（程序内构造数据回退 in_N）。 */
-std::string input_column_name(const dataset::Dataset &data, std::size_t index)
+std::string input_column_name(const ExportNames &names, std::size_t index)
 {
-    return index < data.input_names.size() ? data.input_names[index]
-                                           : "in_" + std::to_string(index + 1);
+    return index < names.input_names.size() ? names.input_names[index]
+                                            : "in_" + std::to_string(index + 1);
 }
 
 /** @brief 数据集产出列名（程序内构造数据回退 out_N）。 */
-std::string output_column_name(const dataset::Dataset &data, std::size_t index)
+std::string output_column_name(const ExportNames &names, std::size_t index)
 {
-    return index < data.output_names.size() ? data.output_names[index]
-                                            : "out_" + std::to_string(index + 1);
+    return index < names.output_names.size() ? names.output_names[index]
+                                             : "out_" + std::to_string(index + 1);
 }
 
 /** @brief 按列集声明展开全部 CSV 列名（与写值顺序一致）。 */
-std::vector<std::string> build_columns(const dataset::Dataset &data,
+std::vector<std::string> build_columns(const ExportNames &names,
                                        const registry::ResultColumnSpec &spec)
 {
     std::vector<std::string> columns{"dmu", "score", "status"};
     if (spec.include_projections)
     {
-        for (std::size_t i = 0; i < data.input_count(); ++i)
+        for (std::size_t i = 0; i < names.input_names.size(); ++i)
         {
-            columns.push_back("projection_in_" + input_column_name(data, i));
+            columns.push_back("projection_in_" + input_column_name(names, i));
         }
-        for (std::size_t r = 0; r < data.output_count(); ++r)
+        for (std::size_t r = 0; r < names.output_names.size(); ++r)
         {
-            columns.push_back("projection_out_" + output_column_name(data, r));
+            columns.push_back("projection_out_" + output_column_name(names, r));
         }
     }
     if (spec.include_slacks)
     {
-        for (std::size_t i = 0; i < data.input_count(); ++i)
+        for (std::size_t i = 0; i < names.input_names.size(); ++i)
         {
-            columns.push_back("slack_in_" + input_column_name(data, i));
+            columns.push_back("slack_in_" + input_column_name(names, i));
         }
-        for (std::size_t r = 0; r < data.output_count(); ++r)
+        for (std::size_t r = 0; r < names.output_names.size(); ++r)
         {
-            columns.push_back("slack_out_" + output_column_name(data, r));
+            columns.push_back("slack_out_" + output_column_name(names, r));
         }
     }
     if (spec.include_lambdas)
     {
-        for (const auto &name : data.dmu_names)
+        for (const auto &name : names.row_names)
         {
             columns.push_back("lambda_" + name);
         }
     }
     if (spec.include_multipliers)
     {
-        for (std::size_t i = 0; i < data.input_count(); ++i)
+        for (std::size_t i = 0; i < names.input_names.size(); ++i)
         {
-            columns.push_back("mult_v_" + input_column_name(data, i));
+            columns.push_back("mult_v_" + input_column_name(names, i));
         }
-        for (std::size_t r = 0; r < data.output_count(); ++r)
+        for (std::size_t r = 0; r < names.output_names.size(); ++r)
         {
-            columns.push_back("mult_u_" + output_column_name(data, r));
+            columns.push_back("mult_u_" + output_column_name(names, r));
         }
     }
     columns.insert(columns.end(), spec.extra_columns.begin(), spec.extra_columns.end());
@@ -168,32 +168,32 @@ std::string optional_number(const std::vector<double> &values, std::size_t index
 }
 
 /** @brief 按展开列写单行 CSV 值（与 build_columns 顺序严格一致；空值保持单元格对位）。 */
-std::vector<std::string> build_row_values(const DmuResult &dmu, const dataset::Dataset &data,
+std::vector<std::string> build_row_values(const DmuResult &dmu, const ExportNames &names,
                                           const registry::ResultColumnSpec &spec)
 {
     std::vector<std::string> values;
-    values.push_back(data.dmu_names[dmu.dmu_index]);
+    values.push_back(names.row_names[dmu.dmu_index]);
     values.push_back(dmu.has_score() ? format_number(dmu.score) : std::string{});
     values.push_back(to_string(dmu.status));
 
     if (spec.include_projections)
     {
-        for (std::size_t i = 0; i < data.input_count(); ++i)
+        for (std::size_t i = 0; i < names.input_names.size(); ++i)
         {
             values.push_back(optional_number(dmu.input_targets, i));
         }
-        for (std::size_t r = 0; r < data.output_count(); ++r)
+        for (std::size_t r = 0; r < names.output_names.size(); ++r)
         {
             values.push_back(optional_number(dmu.output_targets, r));
         }
     }
     if (spec.include_slacks)
     {
-        for (std::size_t i = 0; i < data.input_count(); ++i)
+        for (std::size_t i = 0; i < names.input_names.size(); ++i)
         {
             values.push_back(optional_number(dmu.input_slacks, i));
         }
-        for (std::size_t r = 0; r < data.output_count(); ++r)
+        for (std::size_t r = 0; r < names.output_names.size(); ++r)
         {
             values.push_back(optional_number(dmu.output_slacks, r));
         }
@@ -201,7 +201,7 @@ std::vector<std::string> build_row_values(const DmuResult &dmu, const dataset::D
     if (spec.include_lambdas)
     {
         // 稀疏 λ 展开为全 DMU 列（02 册 §4.1 lambda_*；零值留空）
-        std::vector<double> lambda_by_dmu(data.dmu_names.size(), 0.0);
+        std::vector<double> lambda_by_dmu(names.row_names.size(), 0.0);
         for (const auto &[index, weight] : dmu.lambdas)
         {
             lambda_by_dmu[index] = weight;
@@ -213,11 +213,11 @@ std::vector<std::string> build_row_values(const DmuResult &dmu, const dataset::D
     }
     if (spec.include_multipliers)
     {
-        for (std::size_t i = 0; i < data.input_count(); ++i)
+        for (std::size_t i = 0; i < names.input_names.size(); ++i)
         {
             values.push_back(optional_number(dmu.input_multipliers, i));
         }
-        for (std::size_t r = 0; r < data.output_count(); ++r)
+        for (std::size_t r = 0; r < names.output_names.size(); ++r)
         {
             values.push_back(optional_number(dmu.output_multipliers, r));
         }
@@ -254,11 +254,11 @@ std::string result_filename(const ResultMeta &meta, bool uses_rts, std::string_v
     return std::move(stream).str();
 }
 
-void write_result_csv(const std::string &path, const ModelResult &result,
-                      const dataset::Dataset &data, const registry::ResultColumnSpec &spec)
+void write_result_csv(const std::string &path, const ModelResult &result, const ExportNames &names,
+                      const registry::ResultColumnSpec &spec)
 {
     std::ofstream stream = open_output(path);
-    const std::vector<std::string> columns = build_columns(data, spec);
+    const std::vector<std::string> columns = build_columns(names, spec);
     for (std::size_t c = 0; c < columns.size(); ++c)
     {
         if (c != 0)
@@ -271,7 +271,7 @@ void write_result_csv(const std::string &path, const ModelResult &result,
 
     for (const DmuResult &dmu : result.dmu_results)
     {
-        const std::vector<std::string> values = build_row_values(dmu, data, spec);
+        const std::vector<std::string> values = build_row_values(dmu, names, spec);
         for (std::size_t v = 0; v < values.size(); ++v)
         {
             if (v != 0)
@@ -288,8 +288,8 @@ void write_result_csv(const std::string &path, const ModelResult &result,
     }
 }
 
-void write_result_json(const std::string &path, const ModelResult &result,
-                       const dataset::Dataset &data, const registry::ResultColumnSpec &spec)
+void write_result_json(const std::string &path, const ModelResult &result, const ExportNames &names,
+                       const registry::ResultColumnSpec &spec)
 {
     std::ofstream stream = open_output(path);
     std::ostringstream body;
@@ -306,11 +306,53 @@ void write_result_json(const std::string &path, const ModelResult &result,
     body << R"(, "data_sha1": ")" << json_escape(result.meta.data_sha1) << '"';
     body << "},\n";
 
+    if (result.cross.has_value())
+    {
+        // 交叉效率矩阵（FR-CROSS-004）：评者×被评者 + 行/列均值
+        const CrossMatrix &cross = *result.cross;
+        body << "  \"cross_matrix\": {\n";
+        body << "    \"values\": [\n";
+        for (std::size_t i = 0; i < cross.values.size(); ++i)
+        {
+            body << "      [";
+            for (std::size_t j = 0; j < cross.values[i].size(); ++j)
+            {
+                if (j != 0)
+                {
+                    body << ", ";
+                }
+                body << format_number(cross.values[i][j]);
+            }
+            body << ']' << (i + 1 != cross.values.size() ? "," : "") << '\n';
+        }
+        body << "    ],\n";
+        body << "    \"mean_given\": [";
+        for (std::size_t i = 0; i < cross.mean_given.size(); ++i)
+        {
+            if (i != 0)
+            {
+                body << ", ";
+            }
+            body << format_number(cross.mean_given[i]);
+        }
+        body << "],\n";
+        body << "    \"mean_received\": [";
+        for (std::size_t j = 0; j < cross.mean_received.size(); ++j)
+        {
+            if (j != 0)
+            {
+                body << ", ";
+            }
+            body << format_number(cross.mean_received[j]);
+        }
+        body << "]\n  },\n";
+    }
+
     body << "  \"results\": [\n";
     for (std::size_t d = 0; d < result.dmu_results.size(); ++d)
     {
         const DmuResult &dmu = result.dmu_results[d];
-        body << R"(    {"dmu": ")" << json_escape(data.dmu_names[dmu.dmu_index]) << '"';
+        body << R"(    {"dmu": ")" << json_escape(names.row_names[dmu.dmu_index]) << '"';
         body << ", \"score\": ";
         body << (dmu.has_score() ? format_number(dmu.score) : std::string("null"));
         body << ", \"rank\": " << result.summary.rank[d];
@@ -326,7 +368,7 @@ void write_result_json(const std::string &path, const ModelResult &result,
                     body << ", ";
                 }
                 first = false;
-                body << '"' << json_escape(input_column_name(data, i))
+                body << '"' << json_escape(input_column_name(names, i))
                      << "\": " << format_number(dmu.input_targets[i]);
             }
             for (std::size_t r = 0; r < dmu.output_targets.size(); ++r)
@@ -336,7 +378,7 @@ void write_result_json(const std::string &path, const ModelResult &result,
                     body << ", ";
                 }
                 first = false;
-                body << '"' << json_escape(output_column_name(data, r))
+                body << '"' << json_escape(output_column_name(names, r))
                      << "\": " << format_number(dmu.output_targets[r]);
             }
             body << '}';
@@ -352,7 +394,7 @@ void write_result_json(const std::string &path, const ModelResult &result,
                     body << ", ";
                 }
                 first = false;
-                body << '"' << json_escape(input_column_name(data, i))
+                body << '"' << json_escape(input_column_name(names, i))
                      << "\": " << format_number(dmu.input_slacks[i]);
             }
             for (std::size_t r = 0; r < dmu.output_slacks.size(); ++r)
@@ -362,7 +404,7 @@ void write_result_json(const std::string &path, const ModelResult &result,
                     body << ", ";
                 }
                 first = false;
-                body << '"' << json_escape(output_column_name(data, r))
+                body << '"' << json_escape(output_column_name(names, r))
                      << "\": " << format_number(dmu.output_slacks[r]);
             }
             body << '}';
@@ -376,7 +418,7 @@ void write_result_json(const std::string &path, const ModelResult &result,
                 {
                     body << ", ";
                 }
-                body << '"' << json_escape(data.dmu_names[dmu.lambdas[l].first])
+                body << '"' << json_escape(names.row_names[dmu.lambdas[l].first])
                      << "\": " << format_number(dmu.lambdas[l].second);
             }
             body << '}';
@@ -391,7 +433,7 @@ void write_result_json(const std::string &path, const ModelResult &result,
                 {
                     body << ", ";
                 }
-                body << '"' << json_escape(input_column_name(data, i))
+                body << '"' << json_escape(input_column_name(names, i))
                      << "\": " << format_number(dmu.input_multipliers[i]);
             }
             body << "}, \"u\": {";
@@ -401,7 +443,7 @@ void write_result_json(const std::string &path, const ModelResult &result,
                 {
                     body << ", ";
                 }
-                body << '"' << json_escape(output_column_name(data, r))
+                body << '"' << json_escape(output_column_name(names, r))
                      << "\": " << format_number(dmu.output_multipliers[r]);
             }
             body << "}}";
