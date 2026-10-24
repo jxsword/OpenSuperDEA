@@ -5,6 +5,7 @@
 #include "dataset.h"
 
 #include <algorithm>
+#include <ranges>
 
 namespace opensuperdea::dataset
 {
@@ -30,10 +31,8 @@ bool PanelData::is_balanced() const
         return true;
     }
     const std::size_t reference_size = sections.begin()->second.dmu_names.size();
-    const bool all_match =
-        std::all_of(sections.begin(), sections.end(), [reference_size](const auto &entry) {
-            return entry.second.dmu_names.size() == reference_size;
-        });
-    return all_match;
+    return std::ranges::all_of(sections, [reference_size](const auto &entry) {
+        return entry.second.dmu_names.size() == reference_size;
+    });
 }
 } // namespace opensuperdea::dataset

@@ -7,6 +7,7 @@
 #include "validator.h"
 
 #include <algorithm>
+#include <ranges>
 #include <set>
 #include <unordered_set>
 
@@ -43,12 +44,22 @@ void check_v002(const CsvTable &table, const std::vector<std::string> &input_col
     static_cast<void>(output_columns);
     if (table.headers.empty())
     {
-        errors.push_back({"V-002", file_path, 0, "", "空文件或无表头", "提供含表头的 CSV"});
+        errors.push_back({.rule_id = "V-002",
+                          .file = file_path,
+                          .line = 0,
+                          .column = "",
+                          .message = "空文件或无表头",
+                          .hint = "提供含表头的 CSV"});
         return;
     }
     if (table.rows.empty())
     {
-        errors.push_back({"V-002", file_path, 0, "", "无数据行", "表头下至少需要一行数据"});
+        errors.push_back({.rule_id = "V-002",
+                          .file = file_path,
+                          .line = 0,
+                          .column = "",
+                          .message = "无数据行",
+                          .hint = "表头下至少需要一行数据"});
     }
 }
 
@@ -61,17 +72,25 @@ void check_v003(const CsvTable &table, const std::vector<std::string> &input_col
     {
         return; // V-002 已报
     }
-    const bool has_dmu =
-        std::find(table.headers.begin(), table.headers.end(), "dmu") != table.headers.end();
+    const bool has_dmu = std::ranges::find(table.headers, "dmu") != table.headers.end();
     if (!has_dmu)
     {
-        errors.push_back({"V-003", file_path, 0, "dmu", "缺少 dmu 名称列", "首列命名为 dmu"});
+        errors.push_back({.rule_id = "V-003",
+                          .file = file_path,
+                          .line = 0,
+                          .column = "dmu",
+                          .message = "缺少 dmu 名称列",
+                          .hint = "首列命名为 dmu"});
     }
     if (input_columns.empty() && output_columns.empty())
     {
         errors.push_back(
-            {"V-003", file_path, 0, "", "无任何 in_/out_ 角色列",
-             "投入列以 in_ 前缀、产出列以 out_ 前缀命名，或用 --inputs/--outputs 指定"});
+            {.rule_id = "V-003",
+             .file = file_path,
+             .line = 0,
+             .column = "",
+             .message = "无任何 in_/out_ 角色列",
+             .hint = "投入列以 in_ 前缀、产出列以 out_ 前缀命名，或用 --inputs/--outputs 指定"});
     }
 }
 
@@ -83,7 +102,7 @@ void check_v004(const CsvTable &table, const std::vector<std::string> &input_col
     std::set<std::size_t> numeric_columns; // 表头索引集合
     for (const auto &column_name : input_columns)
     {
-        auto it = std::find(table.headers.begin(), table.headers.end(), column_name);
+        auto it = std::ranges::find(table.headers, column_name);
         if (it != table.headers.end())
         {
             numeric_columns.insert(static_cast<std::size_t>(it - table.headers.begin()));
@@ -91,7 +110,7 @@ void check_v004(const CsvTable &table, const std::vector<std::string> &input_col
     }
     for (const auto &column_name : output_columns)
     {
-        auto it = std::find(table.headers.begin(), table.headers.end(), column_name);
+        auto it = std::ranges::find(table.headers, column_name);
         if (it != table.headers.end())
         {
             numeric_columns.insert(static_cast<std::size_t>(it - table.headers.begin()));
@@ -108,15 +127,22 @@ void check_v004(const CsvTable &table, const std::vector<std::string> &input_col
             {
                 if (reported >= MAX_REPORTED)
                 {
-                    errors.push_back({"V-004", file_path, 0, "", "非数值单元格过多（其余略）",
-                                      "修正后重新校验"});
+                    errors.push_back({.rule_id = "V-004",
+                                      .file = file_path,
+                                      .line = 0,
+                                      .column = "",
+                                      .message = "非数值单元格过多（其余略）",
+                                      .hint = "修正后重新校验"});
                     return;
                 }
                 ++reported;
-                errors.push_back({"V-004", file_path, row_index + 2, // +2：表头 1 行 + 1 基行号
-                                  table.headers[column_index],
-                                  "非数值: \"" + table.rows[row_index][column_index] + "\"",
-                                  "填写数值（支持整数/小数/科学计数）"});
+                errors.push_back(
+                    {.rule_id = "V-004",
+                     .file = file_path,
+                     .line = row_index + 2, // +2：表头 1 行 + 1 基行号
+                     .column = table.headers[column_index],
+                     .message = "非数值: \"" + table.rows[row_index][column_index] + "\"",
+                     .hint = "填写数值（支持整数/小数/科学计数）"});
             }
         }
     }
@@ -129,7 +155,7 @@ void check_v005(const CsvTable &table, const std::vector<std::string> &input_col
 {
     static_cast<void>(input_columns);
     static_cast<void>(output_columns);
-    auto dmu_it = std::find(table.headers.begin(), table.headers.end(), "dmu");
+    auto dmu_it = std::ranges::find(table.headers, "dmu");
     if (dmu_it == table.headers.end())
     {
         return; // V-003 已报
@@ -142,8 +168,12 @@ void check_v005(const CsvTable &table, const std::vector<std::string> &input_col
         const std::string &name = table.rows[row_index][dmu_index];
         if (name.empty())
         {
-            errors.push_back(
-                {"V-005", file_path, row_index + 2, "dmu", "DMU 名为空", "每行需唯一 DMU 名称"});
+            errors.push_back({.rule_id = "V-005",
+                              .file = file_path,
+                              .line = row_index + 2,
+                              .column = "dmu",
+                              .message = "DMU 名为空",
+                              .hint = "每行需唯一 DMU 名称"});
             continue;
         }
         if (is_panel)
@@ -163,8 +193,12 @@ void check_v005(const CsvTable &table, const std::vector<std::string> &input_col
         {
             joined += (joined.empty() ? "" : ", ") + name;
         }
-        errors.push_back(
-            {"V-005", file_path, 0, "dmu", "重复 DMU 名: " + joined, "DMU 名称必须唯一"});
+        errors.push_back({.rule_id = "V-005",
+                          .file = file_path,
+                          .line = 0,
+                          .column = "dmu",
+                          .message = "重复 DMU 名: " + joined,
+                          .hint = "DMU 名称必须唯一"});
     }
 }
 
@@ -175,8 +209,8 @@ void check_v009(const CsvTable &table, const std::vector<std::string> &input_col
 {
     static_cast<void>(input_columns);
     static_cast<void>(output_columns);
-    auto period_it = std::find(table.headers.begin(), table.headers.end(), "period");
-    auto dmu_it = std::find(table.headers.begin(), table.headers.end(), "dmu");
+    auto period_it = std::ranges::find(table.headers, "period");
+    auto dmu_it = std::ranges::find(table.headers, "dmu");
     if (period_it == table.headers.end() || dmu_it == table.headers.end())
     {
         return; // 非面板数据或 V-003 已报
@@ -190,9 +224,12 @@ void check_v009(const CsvTable &table, const std::vector<std::string> &input_col
             std::make_pair(table.rows[row_index][dmu_index], table.rows[row_index][period_index]);
         if (!seen.insert(key).second)
         {
-            errors.push_back({"V-009", file_path, row_index + 2, "dmu,period",
-                              "组合重复: (" + key.first + "," + key.second + ")",
-                              "每 (dmu, period) 组合仅允许一行"});
+            errors.push_back({.rule_id = "V-009",
+                              .file = file_path,
+                              .line = row_index + 2,
+                              .column = "dmu,period",
+                              .message = "组合重复: (" + key.first + "," + key.second + ")",
+                              .hint = "每 (dmu, period) 组合仅允许一行"});
         }
     }
 }
