@@ -1,6 +1,15 @@
-# opensuperdea 可执行目标（目标名 snake_case，见 naming_convention.md §四）
-add_executable(opensuperdea
-    main.cpp
+# 引擎静态库（core + adapters）与 CLI 可执行
+# 目标名 snake_case（naming_convention.md §四）；目录职责见 design_docs/01_overall_design.md §5
+add_library(opensuperdea_core STATIC
+    adapters/highs_adapter.cpp
 )
-# CLI 占位无外部链接；M1 引入 CLI11 后在此追加 target_link_libraries。
-# GUI 骨架（main_window.cpp/h + Qt6::Widgets）已移入 tmp/gui_skeleton/，M6 恢复。
+
+# 引擎头以 src/ 为根（#include "core/..." / "adapters/..."），对测试与未来 GUI 复用开放
+target_include_directories(opensuperdea_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+# Eigen 随 core 公共头暴露（数据矩阵底座）；HiGHS 仅适配层 .cpp 接触，不外泄（DR-004）
+target_link_libraries(opensuperdea_core PUBLIC Eigen3::Eigen)
+target_link_libraries(opensuperdea_core PRIVATE highs::highs)
+
+add_executable(opensuperdea main.cpp)
+target_link_libraries(opensuperdea PRIVATE opensuperdea_core CLI11::CLI11)
