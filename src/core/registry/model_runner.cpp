@@ -115,6 +115,11 @@ result::ModelResult run_model(const std::string &model_id, const dataset::Datase
         context.dmu_index = i;
         context.reference_indices = select_reference_set(kind, params, data.dmu_count(), i);
         context.options = options;
+        if (config.super_efficiency)
+        {
+            // 超效率标志经选项传给模型（SBM 族据此切换 Tone 2002 LP；06 册 §4.2）
+            context.options.model_options["super"] = "1";
+        }
         out.dmu_results.push_back(descriptor->solve(context));
     }
     out.summary = summarize(out.dmu_results);

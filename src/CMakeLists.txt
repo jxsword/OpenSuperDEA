@@ -7,6 +7,11 @@ add_library(opensuperdea_core STATIC
     core/dataset/dataset.cpp
     core/dataset/dataset_builder.cpp
     core/dataset/validator.cpp
+    core/distance/ddf_model.cpp
+    core/nonradial/additive_models.cpp
+    core/nonradial/fdh_model.cpp
+    core/nonradial/price_models.cpp
+    core/nonradial/sbm_model.cpp
     core/radial/multiplier_model.cpp
     core/radial/radial_envelope_model.cpp
     core/radial/scale_efficiency_model.cpp

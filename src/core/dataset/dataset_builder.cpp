@@ -62,6 +62,44 @@ void check_explicit_columns(const CsvTable &table, const std::vector<std::string
         }
     }
 }
+
+/** @brief 按列名清单装配 n×expected 矩阵（列数不符报 V-006，缺失列报 V-003）。 */
+void assemble_columns(const CsvTable &table, const std::vector<std::string> &names,
+                      Eigen::MatrixXd &target, const std::string &file_path,
+                      std::vector<ValidationError> &errors, const std::string &role_label)
+{
+    if (names.size() != static_cast<std::size_t>(target.cols()))
+    {
+        errors.push_back(
+            {.rule_id = "V-006",
+             .file = file_path,
+             .line = 0,
+             .column = "",
+             .message = role_label + "列数 " + std::to_string(names.size()) + " 与期望 " +
+                        std::to_string(static_cast<std::size_t>(target.cols())) + " 不匹配",
+             .hint = "扩展前缀列数须与 in_/out_ 列数一致"});
+        return;
+    }
+    for (std::size_t j = 0; j < names.size(); ++j)
+    {
+        const auto column_index = find_column(table, names[j]);
+        if (!column_index.has_value())
+        {
+            errors.push_back({.rule_id = "V-003",
+                              .file = file_path,
+                              .line = 0,
+                              .column = names[j],
+                              .message = role_label + "列缺失于表头",
+                              .hint = "检查列名拼写"});
+            return;
+        }
+        for (std::size_t row = 0; row < table.rows.size(); ++row)
+        {
+            target(static_cast<Eigen::Index>(row), static_cast<Eigen::Index>(j)) =
+                std::stod(table.rows[row][*column_index]);
+        }
+    }
+}
 } // namespace
 
 ColumnRoles identify_roles(const CsvTable &table, const BuildOptions &options,
@@ -92,6 +130,10 @@ ColumnRoles identify_roles(const CsvTable &table, const BuildOptions &options,
     }
     roles.direction_in_columns = columns_with_prefix(table, "di_");
     roles.direction_out_columns = columns_with_prefix(table, "do_");
+    roles.price_in_columns = columns_with_prefix(table, "pi_");
+    roles.price_out_columns = columns_with_prefix(table, "po_");
+    roles.weight_in_columns = columns_with_prefix(table, "w_in_");
+    roles.weight_out_columns = columns_with_prefix(table, "w_out_");
     return roles;
 }
 
@@ -237,6 +279,64 @@ Dataset build_dataset(const CsvTable &table, const ColumnRoles &roles, const std
             }
         }
         dataset.directions = std::move(directions);
+    }
+
+    // 价格列装配（FR-IO-003；pi_ n×m / po_ n×s；V-006 列数校验已前置）
+    if (!roles.price_in_columns.empty() || !roles.price_out_columns.empty())
+    {
+        PriceData prices;
+        prices.input_prices.resize(static_cast<Eigen::Index>(dmu_count),
+                                   static_cast<Eigen::Index>(m));
+        prices.output_prices.resize(static_cast<Eigen::Index>(dmu_count),
+                                    static_cast<Eigen::Index>(s));
+        assemble_columns(table, roles.price_in_columns, prices.input_prices, file_path, errors,
+                         "价格投入");
+        assemble_columns(table, roles.price_out_columns, prices.output_prices, file_path, errors,
+                         "价格产出");
+        dataset.prices = std::move(prices);
+    }
+
+    // 偏好固定权重装配（FR-NEG-001；w_in_/w_out_ 数据集级参数，取首行）
+    if (!roles.weight_in_columns.empty() || !roles.weight_out_columns.empty())
+    {
+        // V-006：权重列数须与 m/s 一致
+        if (roles.weight_in_columns.size() != m || roles.weight_out_columns.size() != s)
+        {
+            errors.push_back({.rule_id = "V-006",
+                              .file = file_path,
+                              .line = 0,
+                              .column = "",
+                              .message = "权重列数与投入/产出维数不匹配（w_in_ 应为 " +
+                                         std::to_string(m) + "，w_out_ 应为 " + std::to_string(s) +
+                                         "）",
+                              .hint = "w_in_/w_out_ 前缀列数须与 in_/out_ 一致"});
+            return Dataset{};
+        }
+        WeightData weights;
+        weights.input_weights.resize(static_cast<Eigen::Index>(m));
+        weights.output_weights.resize(static_cast<Eigen::Index>(s));
+        if (!table.rows.empty())
+        {
+            for (std::size_t j = 0; j < roles.weight_in_columns.size(); ++j)
+            {
+                const auto column_index = find_column(table, roles.weight_in_columns[j]);
+                if (column_index.has_value())
+                {
+                    weights.input_weights(static_cast<Eigen::Index>(j)) =
+                        std::stod(table.rows[0][*column_index]);
+                }
+            }
+            for (std::size_t j = 0; j < roles.weight_out_columns.size(); ++j)
+            {
+                const auto column_index = find_column(table, roles.weight_out_columns[j]);
+                if (column_index.has_value())
+                {
+                    weights.output_weights(static_cast<Eigen::Index>(j)) =
+                        std::stod(table.rows[0][*column_index]);
+                }
+            }
+        }
+        dataset.weights = std::move(weights);
     }
     static_cast<void>(errors);
     return dataset;

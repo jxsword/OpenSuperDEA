@@ -36,6 +36,29 @@ struct DirectionData
     Eigen::MatrixXd output_directions; // n×s
 };
 
+/** @brief 列角色识别结果：各类列名清单（保持表头顺序）。
+ *  @details 定义于数据契约层（builder 与 validator 共同消费，避免头循环）。 */
+struct ColumnRoles
+{
+    std::vector<std::string> dmu_column;            // 0 或 1 个元素
+    std::optional<std::string> period_column;       // 面板数据时存在
+    std::vector<std::string> input_columns;         // in_*
+    std::vector<std::string> output_columns;        // out_*
+    std::vector<std::string> direction_in_columns;  // di_*
+    std::vector<std::string> direction_out_columns; // do_*
+    std::vector<std::string> price_in_columns;      // pi_*（FR-COST，M2）
+    std::vector<std::string> price_out_columns;     // po_*（FR-COST，M2）
+    std::vector<std::string> weight_in_columns;     // w_in_*（FR-NEG-001，M2）
+    std::vector<std::string> weight_out_columns;    // w_out_*（FR-NEG-001，M2）
+};
+
+/** @brief 构造选项：CLI 显式列名覆写（02 册 §2.4）。 */
+struct BuildOptions
+{
+    std::vector<std::string> explicit_inputs;  // --inputs c1,c2（空 = 前缀推断）
+    std::vector<std::string> explicit_outputs; // --outputs c1,c2
+};
+
 /** @brief 截面数据集：n 个 DMU × (m 投入 + s 产出)。 */
 struct Dataset
 {

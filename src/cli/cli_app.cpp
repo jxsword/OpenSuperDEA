@@ -78,8 +78,7 @@ int load_and_build(const std::string &data_path, bool as_panel,
     options.explicit_outputs = explicit_outputs;
     std::vector<dataset::ValidationError> errors;
     const auto roles = dataset::identify_roles(table, options, data_path, errors);
-    auto validation_errors = dataset::validate_table(table, roles.input_columns,
-                                                     roles.output_columns, data_path, as_panel);
+    auto validation_errors = dataset::validate_table(table, roles, data_path, as_panel);
     errors.insert(errors.end(), validation_errors.begin(), validation_errors.end());
 
     if (as_panel)
@@ -196,8 +195,8 @@ int run_solve(const std::string &model_id, const std::string &data_path, bool as
               const std::vector<std::string> &explicit_inputs,
               const std::vector<std::string> &explicit_outputs, const std::string &orientation_text,
               const std::string &rts_text, bool rts_explicit, bool super_efficiency,
-              const std::string &format, const std::string &outdir, std::ostream &out,
-              std::ostream &err)
+              const std::string &direction, const std::string &format, const std::string &outdir,
+              std::ostream &out, std::ostream &err)
 {
     if (model_id.empty())
     {
@@ -260,6 +259,16 @@ int run_solve(const std::string &model_id, const std::string &data_path, bool as
     registry::SolveOptions options;
     options.orientation = orientation;
     options.rts = rts;
+    if (!direction.empty())
+    {
+        // 方向来源仅 DDF 消费（06 册 §5）；显式传给其他模型即参数错误
+        if (model_id != "ddf")
+        {
+            err << "[E1] args: --direction 仅适用于 ddf 模型\n";
+            return EXIT_ARG;
+        }
+        options.model_options["direction"] = direction;
+    }
     registry::RunConfig config;
     config.super_efficiency = super_efficiency;
     config.data_sha1 = file_sha1(data_path);
@@ -349,7 +358,8 @@ int run_cli(int argc, char **argv, std::ostream &out, std::ostream &err)
     std::vector<std::string> solve_inputs;
     std::vector<std::string> solve_outputs;
     std::string solve_orientation = "in";
-    std::string solve_rts; // 空串 = 未显式给出（默认 crs；非 rts 模型显式传入报错）
+    std::string solve_rts;       // 空串 = 未显式给出（默认 crs；非 rts 模型显式传入报错）
+    std::string solve_direction; // 空串 = 未显式给出（ddf 默认 own）
     std::string solve_format = "csv";
     std::string solve_outdir = ".";
     bool solve_super = false;
@@ -363,6 +373,8 @@ int run_cli(int argc, char **argv, std::ostream &out, std::ostream &err)
     solve_cmd->add_option("--outputs", solve_outputs, "产出列名覆写（可多个）");
     solve_cmd->add_option("--orientation", solve_orientation, "定向 in|out|non（默认 in）");
     solve_cmd->add_option("--rts", solve_rts, "规模报酬 crs|vrs|nirs|ndrs（默认 crs）");
+    solve_cmd->add_option("--direction", solve_direction,
+                          "DDF 方向 own|mean|unit|custom|rdm（默认 own）");
     solve_cmd->add_flag("--super", solve_super, "超效率（参考集剔除被评 DMU）");
     solve_cmd->add_option("--format", solve_format, "结果格式 csv|json（默认 csv）");
     solve_cmd->add_option("-o,--outdir", solve_outdir, "结果输出目录（默认当前目录）");
@@ -395,7 +407,7 @@ int run_cli(int argc, char **argv, std::ostream &out, std::ostream &err)
         const bool rts_explicit = !solve_rts.empty();
         return run_solve(solve_model, solve_data, solve_panel, solve_inputs, solve_outputs,
                          solve_orientation, rts_explicit ? solve_rts : "crs", rts_explicit,
-                         solve_super, solve_format, solve_outdir, out, err);
+                         solve_super, solve_direction, solve_format, solve_outdir, out, err);
     }
     return EXIT_OK;
 }

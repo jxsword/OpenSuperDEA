@@ -7,6 +7,7 @@
 #include "validator.h"
 
 #include <algorithm>
+#include <cmath>
 #include <ranges>
 #include <set>
 #include <unordered_set>
@@ -94,28 +95,29 @@ void check_v003(const CsvTable &table, const std::vector<std::string> &input_col
     }
 }
 
-/** @brief V-004：非数值单元格（聚合全部行报告，前 10 条后截断）。 */
-void check_v004(const CsvTable &table, const std::vector<std::string> &input_columns,
-                const std::vector<std::string> &output_columns,
+/** @brief V-004：非数值单元格（含方向/价格/权重扩展列；聚合报告，前 10 条后截断）。 */
+void check_v004(const CsvTable &table, const ColumnRoles &roles,
                 std::vector<ValidationError> &errors, const std::string &file_path)
 {
     std::set<std::size_t> numeric_columns; // 表头索引集合
-    for (const auto &column_name : input_columns)
-    {
-        auto it = std::ranges::find(table.headers, column_name);
-        if (it != table.headers.end())
+    const auto collect = [&table, &numeric_columns](const std::vector<std::string> &names) {
+        for (const auto &column_name : names)
         {
-            numeric_columns.insert(static_cast<std::size_t>(it - table.headers.begin()));
+            auto it = std::ranges::find(table.headers, column_name);
+            if (it != table.headers.end())
+            {
+                numeric_columns.insert(static_cast<std::size_t>(it - table.headers.begin()));
+            }
         }
-    }
-    for (const auto &column_name : output_columns)
-    {
-        auto it = std::ranges::find(table.headers, column_name);
-        if (it != table.headers.end())
-        {
-            numeric_columns.insert(static_cast<std::size_t>(it - table.headers.begin()));
-        }
-    }
+    };
+    collect(roles.input_columns);
+    collect(roles.output_columns);
+    collect(roles.direction_in_columns);
+    collect(roles.direction_out_columns);
+    collect(roles.price_in_columns);
+    collect(roles.price_out_columns);
+    collect(roles.weight_in_columns);
+    collect(roles.weight_out_columns);
     constexpr std::size_t MAX_REPORTED = 10;
     std::size_t reported = 0;
     for (std::size_t row_index = 0; row_index < table.rows.size(); ++row_index)
@@ -233,6 +235,155 @@ void check_v009(const CsvTable &table, const std::vector<std::string> &input_col
         }
     }
 }
+
+/** @brief V-006：方向/价格/权重扩展列数与 m、s 不匹配。 */
+void check_v006(const CsvTable &table, const ColumnRoles &roles,
+                std::vector<ValidationError> &errors, const std::string &file_path)
+{
+    const std::size_t m = roles.input_columns.size();
+    const std::size_t s = roles.output_columns.size();
+    const auto expect = [&](const std::vector<std::string> &names, std::size_t expected,
+                            const std::string &label) {
+        if (names.empty() || names.size() == expected)
+        {
+            return;
+        }
+        errors.push_back({.rule_id = "V-006",
+                          .file = file_path,
+                          .line = 0,
+                          .column = "",
+                          .message = label + "列数 " + std::to_string(names.size()) + " 与期望 " +
+                                     std::to_string(expected) + " 不匹配",
+                          .hint = "扩展前缀列数须与 in_/out_ 列数一致"});
+    };
+    expect(roles.direction_in_columns, m, "方向输入(di_)");
+    expect(roles.direction_out_columns, s, "方向产出(do_)");
+    expect(roles.price_in_columns, m, "价格投入(pi_)");
+    expect(roles.price_out_columns, s, "价格产出(po_)");
+    expect(roles.weight_in_columns, m, "权重投入(w_in_)");
+    expect(roles.weight_out_columns, s, "权重产出(w_out_)");
+    static_cast<void>(table);
+}
+
+/** @brief V-008：投入/产出出现负值（M2 常规模型不允许；M5 修正 SBM 放行）。 */
+void check_v008(const CsvTable &table, const ColumnRoles &roles,
+                std::vector<ValidationError> &errors, const std::string &file_path)
+{
+    constexpr std::size_t MAX_REPORTED = 10;
+    std::size_t reported = 0;
+    const auto scan = [&](const std::vector<std::string> &names, const std::string &role_label) {
+        for (const auto &column_name : names)
+        {
+            auto it = std::ranges::find(table.headers, column_name);
+            if (it == table.headers.end())
+            {
+                continue; // 缺失列由 V-003 报告
+            }
+            const std::size_t column_index = static_cast<std::size_t>(it - table.headers.begin());
+            for (std::size_t row_index = 0; row_index < table.rows.size(); ++row_index)
+            {
+                double value = 0.0;
+                if (!parse_number(table.rows[row_index][column_index], value) || value >= 0.0)
+                {
+                    continue;
+                }
+                if (reported >= MAX_REPORTED)
+                {
+                    errors.push_back({.rule_id = "V-008",
+                                      .file = file_path,
+                                      .line = 0,
+                                      .column = "",
+                                      .message = "负值单元格过多（其余略）",
+                                      .hint = "修正后重新校验"});
+                    return;
+                }
+                ++reported;
+                errors.push_back(
+                    {.rule_id = "V-008",
+                     .file = file_path,
+                     .line = row_index + 2,
+                     .column = column_name,
+                     .message = role_label + "出现负值: " + table.rows[row_index][column_index],
+                     .hint = "换用允许负值的模型（M5 修正 SBM）或清洗数据"});
+            }
+        }
+    };
+    scan(roles.input_columns, "投入");
+    scan(roles.output_columns, "产出");
+}
+
+/** @brief V-010：价格 ≤ 0 / 权重和 ≠ 1 等模型前置条件。 */
+void check_v010(const CsvTable &table, const ColumnRoles &roles,
+                std::vector<ValidationError> &errors, const std::string &file_path)
+{
+    const auto scan_prices = [&](const std::vector<std::string> &names) {
+        for (const auto &column_name : names)
+        {
+            auto it = std::ranges::find(table.headers, column_name);
+            if (it == table.headers.end())
+            {
+                continue;
+            }
+            const std::size_t column_index = static_cast<std::size_t>(it - table.headers.begin());
+            for (std::size_t row_index = 0; row_index < table.rows.size(); ++row_index)
+            {
+                double value = 0.0;
+                if (!parse_number(table.rows[row_index][column_index], value))
+                {
+                    continue; // 非数值由 V-004 报告
+                }
+                if (value <= 0.0)
+                {
+                    errors.push_back(
+                        {.rule_id = "V-010",
+                         .file = file_path,
+                         .line = row_index + 2,
+                         .column = column_name,
+                         .message = "价格须为正，实得 " + table.rows[row_index][column_index],
+                         .hint = "检查价格数据（成本/收益/利润模型要求 pi_/po_ > 0）"});
+                }
+            }
+        }
+    };
+    scan_prices(roles.price_in_columns);
+    scan_prices(roles.price_out_columns);
+
+    constexpr double WEIGHT_SUM_TOLERANCE = 1e-9;
+    const auto check_weight_sum = [&](const std::vector<std::string> &names,
+                                      const std::string &label) {
+        if (names.empty() || table.rows.empty())
+        {
+            return;
+        }
+        double sum = 0.0;
+        bool parse_failure = false;
+        for (const auto &column_name : names)
+        {
+            auto it = std::ranges::find(table.headers, column_name);
+            if (it == table.headers.end())
+            {
+                return; // 缺失列由 V-003 报告
+            }
+            double value = 0.0;
+            parse_failure =
+                parse_failure ||
+                !parse_number(table.rows[0][static_cast<std::size_t>(it - table.headers.begin())],
+                              value);
+            sum += value;
+        }
+        if (parse_failure || std::abs(sum - 1.0) > WEIGHT_SUM_TOLERANCE)
+        {
+            errors.push_back({.rule_id = "V-010",
+                              .file = file_path,
+                              .line = 0,
+                              .column = label,
+                              .message = label + "权重和 ≠ 1（实得 " + std::to_string(sum) + "）",
+                              .hint = "偏好固定权重 w_in_/w_out_ 各列之和须为 1"});
+        }
+    };
+    check_weight_sum(roles.weight_in_columns, "w_in_");
+    check_weight_sum(roles.weight_out_columns, "w_out_");
+}
 } // namespace
 
 std::vector<ValidationError> validate_table(const CsvTable &table,
@@ -240,13 +391,25 @@ std::vector<ValidationError> validate_table(const CsvTable &table,
                                             const std::vector<std::string> &output_columns,
                                             const std::string &file_path, bool is_panel)
 {
+    ColumnRoles roles;
+    roles.input_columns = input_columns;
+    roles.output_columns = output_columns;
+    return validate_table(table, roles, file_path, is_panel);
+}
+
+std::vector<ValidationError> validate_table(const CsvTable &table, const ColumnRoles &roles,
+                                            const std::string &file_path, bool is_panel)
+{
     std::vector<ValidationError> errors;
     // 规则顺序即输出顺序（02 册规则表顺序）
-    check_v002(table, input_columns, output_columns, errors, file_path);
-    check_v003(table, input_columns, output_columns, errors, file_path);
-    check_v004(table, input_columns, output_columns, errors, file_path);
-    check_v005(table, input_columns, output_columns, errors, file_path, is_panel);
-    check_v009(table, input_columns, output_columns, errors, file_path);
+    check_v002(table, roles.input_columns, roles.output_columns, errors, file_path);
+    check_v003(table, roles.input_columns, roles.output_columns, errors, file_path);
+    check_v004(table, roles, errors, file_path);
+    check_v005(table, roles.input_columns, roles.output_columns, errors, file_path, is_panel);
+    check_v006(table, roles, errors, file_path);
+    check_v008(table, roles, errors, file_path);
+    check_v009(table, roles.input_columns, roles.output_columns, errors, file_path);
+    check_v010(table, roles, errors, file_path);
     return errors;
 }
 } // namespace opensuperdea::dataset
