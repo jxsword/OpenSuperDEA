@@ -2,6 +2,8 @@ name: ci
 
 # 三段式 CI 之 Actions 两段（第一段为 WSL 本地，见 design_docs/03 册 §6）：
 # Linux（GCC）先行全绿 → Windows（MSVC）跟进（needs 依赖实现顺序门禁）
+# vcpkg 路径为 GitHub 官方 runner 预装位置（images 文档固定值），经 shell 内
+# export 注入 VCPKG_ROOT——workflow env 块不能引用 runner 系统环境变量。
 on:
   push:
     branches: [main, develop, 'release/**']
@@ -12,7 +14,7 @@ jobs:
   linux:
     runs-on: ubuntu-latest
     env:
-      VCPKG_ROOT: ${{ env.VCPKG_INSTALLATION_ROOT }}
+      VCPKG_ROOT: /usr/local/share/vcpkg
     steps:
       - uses: actions/checkout@v4
 
@@ -38,7 +40,7 @@ jobs:
     needs: linux # 顺序门禁：Linux 全绿后才启动 Windows 段
     runs-on: windows-latest
     env:
-      VCPKG_ROOT: ${{ env.VCPKG_INSTALLATION_ROOT }}
+      VCPKG_ROOT: C:\vcpkg
     steps:
       - uses: actions/checkout@v4
 
