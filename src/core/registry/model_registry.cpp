@@ -352,6 +352,33 @@ void ModelRegistry::register_builtin_models()
         };
         register_model(std::move(d));
     }
+    // ---- cross_efficiency：交叉效率（06 册 §8；两阶段，方法经 --method）----
+    {
+        ModelDescriptor d;
+        d.model_id = "cross_efficiency";
+        d.display_name = "交叉效率（DG-I/II、M3 修正、虚拟 DMU；io 口径）";
+        d.orientations = {Orientation::INPUT};
+        d.rts = {Rts::CRS, Rts::VRS};
+        d.columns.extra_columns = {"mean_given"};
+        // 求解走专用整表流水线（run_solve 路由，06 册 §8；此处仅注册能力矩阵）
+        d.solve = [](const SolveContext &) -> opensuperdea::result::DmuResult {
+            throw EngineException(4, "internal", "cross_efficiency 应经专用流水线求解");
+        };
+        register_model(std::move(d));
+    }
+    // ---- malmquist：相邻 Malmquist（06 册 §10；面板级，--panel --model malmquist）----
+    {
+        ModelDescriptor d;
+        d.model_id = "malmquist";
+        d.display_name = "相邻 Malmquist（MI/EC/TC；面板数据）";
+        d.orientations = {Orientation::INPUT, Orientation::OUTPUT, Orientation::NON_DIRECTIONAL};
+        d.rts = all_rts();
+        d.columns.extra_columns = {"unit_name", "ec", "tc"};
+        d.solve = [](const SolveContext &) -> opensuperdea::result::DmuResult {
+            throw EngineException(4, "internal", "malmquist 应经面板流水线求解（--panel）");
+        };
+        register_model(std::move(d));
+    }
     // ---- ddf：方向距离函数（06 册 §5；方向来源经 --direction）----
     {
         ModelDescriptor d;

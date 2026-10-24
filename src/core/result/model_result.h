@@ -7,6 +7,7 @@
 #pragma once
 
 #include <cstddef>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -40,11 +41,20 @@ struct ResultSummary
     std::size_t efficient_count = 0; // 含 super_efficient
 };
 
+/** @brief 交叉效率矩阵（FR-CROSS-004：评者×被评者 + 行/列均值）。 */
+struct CrossMatrix
+{
+    std::vector<std::vector<double>> values; // values[i][j] = 评者 i 对被评 j 的交叉效率
+    std::vector<double> mean_given;          // 行均值 A_i（评者 i 给其余 DMU 的平均，剔除自评）
+    std::vector<double> mean_received;       // 列均值 e_j（被评 j 收到的平均交叉效率，剔除自评）
+};
+
 /** @brief 一次模型运行的结果聚合。 */
 struct ModelResult
 {
     ResultMeta meta;
     std::vector<DmuResult> dmu_results; // 与数据集 DMU 顺序一致
     ResultSummary summary;
+    std::optional<CrossMatrix> cross; // 仅交叉效率模型产出（FR-CROSS-004）
 };
 } // namespace opensuperdea::result

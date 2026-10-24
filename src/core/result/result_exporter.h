@@ -8,6 +8,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include "core/dataset/dataset.h"
 #include "core/registry/model_descriptor.h"
@@ -15,6 +16,22 @@
 
 namespace opensuperdea::result
 {
+/** @brief 导出所需的名字集（数据集行名/列名；窗口分析等合成行场景独立构造）。 */
+struct ExportNames
+{
+    std::vector<std::string> row_names;   // 结果行名（与 dmu_results 对齐）
+    std::vector<std::string> input_names; // 投入列名（空则回退 in_N）
+    std::vector<std::string> output_names;
+
+    /** @brief 由截面数据集构造（常规路径）。 */
+    [[nodiscard]] static ExportNames from_dataset(const dataset::Dataset &data)
+    {
+        return {.row_names = data.dmu_names,
+                .input_names = data.input_names,
+                .output_names = data.output_names};
+    }
+};
+
 /**
  * @brief 结果文件名（02 册 §4.1：`<model>_<orientation>_<rts>_result.<ext>`；
  *        不消费 RTS 的模型省略 rts 段）。
@@ -26,21 +43,21 @@ namespace opensuperdea::result
  * @brief 写 CSV 结果文件。
  * @param path 目标路径（父目录须已存在）
  * @param result 运行结果
- * @param data 数据集（列名与 DMU 名来源）
+ * @param names 行名/列名来源
  * @param spec 模型列集声明
  * @throws registry::EngineException 文件不可写（EXIT_INTERNAL）
  */
-void write_result_csv(const std::string &path, const ModelResult &result,
-                      const dataset::Dataset &data, const registry::ResultColumnSpec &spec);
+void write_result_csv(const std::string &path, const ModelResult &result, const ExportNames &names,
+                      const registry::ResultColumnSpec &spec);
 
 /**
  * @brief 写 JSON 结果文件（02 册 §4.2 schema；对拍 harness 的产品侧输入）。
  * @param path 目标路径（父目录须已存在）
  * @param result 运行结果
- * @param data 数据集（列名与 DMU 名来源）
+ * @param names 行名/列名来源
  * @param spec 模型列集声明
  * @throws registry::EngineException 文件不可写（EXIT_INTERNAL）
  */
-void write_result_json(const std::string &path, const ModelResult &result,
-                       const dataset::Dataset &data, const registry::ResultColumnSpec &spec);
+void write_result_json(const std::string &path, const ModelResult &result, const ExportNames &names,
+                       const registry::ResultColumnSpec &spec);
 } // namespace opensuperdea::result

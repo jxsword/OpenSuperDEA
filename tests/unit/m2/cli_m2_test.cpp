@@ -154,8 +154,9 @@ TEST_F(CliM2, FR_CLI_007_RunOnInvalidDataExitsDataCode)
     EXPECT_EQ(outcome.code, 2);
 }
 
-TEST_F(CliM2, FR_CLI_003_RunRejectsPanelUntilBranch3)
+TEST_F(CliM2, FR_CLI_003_RunPanelWithoutWindowOrMalmquistRejected)
 {
+    // 分支 3 起 --panel 支持 malmquist 与 --window；普通截面模型 + --panel 仍拒绝
     const CliOutcome outcome = run_with({"run", "--model", "ccr", "--panel", "--data",
                                          golden_path("toy_panel/data.csv"), "-o", outdir});
     EXPECT_EQ(outcome.code, 1);

@@ -46,6 +46,10 @@ def run_product(binary: Path, case: dict, workdir: Path) -> dict:
         command.append("--super")
     if product.get("direction"):
         command.extend(["--direction", product["direction"]])
+    if product.get("method"):
+        command.extend(["--method", product["method"]])
+    if product.get("panel"):
+        command.append("--panel")
     proc = subprocess.run(command, capture_output=True, text=True, timeout=300)
     if proc.returncode != 0:
         raise RuntimeError(f"产品 CLI 退出码 {proc.returncode}: {proc.stderr.strip()}")

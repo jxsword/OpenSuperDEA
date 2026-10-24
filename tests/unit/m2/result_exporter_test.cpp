@@ -58,8 +58,12 @@ ExportFixture export_toy(Orientation orientation, Rts rts, bool super = false)
     const std::string dir = testing::TempDir();
     fixture.csv_path = dir + "export_test_result.csv";
     fixture.json_path = dir + "export_test_result.json";
-    opensuperdea::result::write_result_csv(fixture.csv_path, fixture.model_result, data, spec);
-    opensuperdea::result::write_result_json(fixture.json_path, fixture.model_result, data, spec);
+    opensuperdea::result::write_result_csv(fixture.csv_path, fixture.model_result,
+                                           opensuperdea::result::ExportNames::from_dataset(data),
+                                           spec);
+    opensuperdea::result::write_result_json(fixture.json_path, fixture.model_result,
+                                            opensuperdea::result::ExportNames::from_dataset(data),
+                                            spec);
 
     std::ifstream csv_in(fixture.csv_path);
     std::stringstream csv_buffer;

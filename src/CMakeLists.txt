@@ -3,6 +3,7 @@
 add_library(opensuperdea_core STATIC
     adapters/highs_adapter.cpp
     cli/cli_app.cpp
+    core/cross/cross_efficiency.cpp
     core/dataset/csv_parser.cpp
     core/dataset/dataset.cpp
     core/dataset/dataset_builder.cpp
@@ -21,7 +22,9 @@ add_library(opensuperdea_core STATIC
     core/registry/solve_options.cpp
     core/result/dmu_result.cpp
     core/result/result_exporter.cpp
+    core/tfp/malmquist.cpp
     core/util/sha1.cpp
+    core/window/window_analysis.cpp
 )
 
 # 引擎头以 src/ 为根（#include "core/..." / "adapters/..."），对测试与未来 GUI 复用开放
