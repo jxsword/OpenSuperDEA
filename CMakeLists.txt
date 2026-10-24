@@ -17,7 +17,12 @@ option(OPENSUPERDEA_ENABLE_COVERAGE
        "启用覆盖率统计（--coverage，供 llvm-cov/gcovr，SRS P-009）" OFF)
 
 if(OPENSUPERDEA_ENABLE_WARNINGS)
-    add_compile_options(-Wall -Wextra)
+    if(MSVC)
+        # /W4 对齐 GCC -Wall -Wextra 强度；/utf-8 保证中文注释/字符串按 UTF-8 解析
+        add_compile_options(/W4 /utf-8)
+    else()
+        add_compile_options(-Wall -Wextra)
+    endif()
 endif()
 
 if(OPENSUPERDEA_ENABLE_COVERAGE)
