@@ -3,7 +3,7 @@
 # 项目级变量/选项采用 OPENSUPERDEA_ 前缀（§四 的 CPP_STANDARD_ 为其示例项目前缀，按意图适配）。
 cmake_minimum_required(VERSION 3.16)
 
-project(OpenSuperDEA VERSION 0.1.0 LANGUAGES CXX)
+project(OpenSuperDEA VERSION 0.2.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
