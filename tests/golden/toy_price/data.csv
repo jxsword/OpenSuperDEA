@@ -1,0 +1,5 @@
+dmu,in_labor,in_capital,out_revenue,pi_labor,pi_capital,po_revenue
+A,2,1,1,3,2,4
+B,3,2,3,3,2,4
+C,4,3,6,3,2,4
+D,5,4,7,3,2,4

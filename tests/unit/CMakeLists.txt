@@ -15,11 +15,13 @@ target_link_libraries(opensuperdea_unit_tests PRIVATE
 
 # M2 引擎测试（注册表/径向族/导出/CLI 全链路；独立目标便于 ctest -L m2 过滤）
 add_executable(opensuperdea_unit_tests_m2
+    m2/nonradial_test.cpp
     m2/registry_test.cpp
     m2/reference_set_test.cpp
     m2/radial_model_test.cpp
     m2/result_exporter_test.cpp
     m2/sha1_test.cpp
+    m2/validator_m2_test.cpp
     m2/cli_m2_test.cpp
 )
 

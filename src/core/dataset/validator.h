@@ -45,4 +45,12 @@ std::vector<ValidationError> validate_table(const CsvTable &table,
                                             const std::vector<std::string> &input_columns,
                                             const std::vector<std::string> &output_columns,
                                             const std::string &file_path, bool is_panel = false);
+
+/**
+ * @brief 角色感知版（M2 起）：在 M1 规则之上追加 V-004 扩展列数值、V-006 扩展列数、
+ *        V-008 投入/产出负值（M2 常规模型不允许负值；M5 修正 SBM 放行）、
+ *        V-010 价格 ≤ 0 / 权重和 ≠ 1（02 册 §3）。
+ */
+std::vector<ValidationError> validate_table(const CsvTable &table, const ColumnRoles &roles,
+                                            const std::string &file_path, bool is_panel = false);
 } // namespace opensuperdea::dataset

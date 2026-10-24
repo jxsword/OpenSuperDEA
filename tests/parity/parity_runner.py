@@ -36,13 +36,16 @@ def run_product(binary: Path, case: dict, workdir: Path) -> dict:
         "run",
         "--model", product["model"],
         "--orientation", product["orientation"],
-        "--rts", product["rts"],
         "--data", str(data_path),
         "--format", "json",
         "-o", str(workdir),
     ]
+    if product.get("rts"):
+        command.extend(["--rts", product["rts"]])
     if product.get("super"):
         command.append("--super")
+    if product.get("direction"):
+        command.extend(["--direction", product["direction"]])
     proc = subprocess.run(command, capture_output=True, text=True, timeout=300)
     if proc.returncode != 0:
         raise RuntimeError(f"产品 CLI 退出码 {proc.returncode}: {proc.stderr.strip()}")
