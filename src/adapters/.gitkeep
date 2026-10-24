@@ -1,0 +1,3 @@
+# 占位文件：保持空目录入库。第一个第三方库接入时，将其直接调用代码放入本目录
+# 并在此目录的 CMakeLists 中登记；本目录受 .clang-tidy 命名豁免与
+# pre-commit 钩子路径排除双重豁免，详见 scripts/README.md。

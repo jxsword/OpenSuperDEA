@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="use-iframe" content="true">
+<meta name="html-box-height-mode" content="auto">
+<meta name="description" content="OpenSuperDEA 10 项独有算法实现路线总览矩阵：优先级分组、主论文路线、开源对拍与黄金算例">
+<title>独有算法实现路线总览</title>
+<style>
+  :root{--main:#1A2B4A;--aux:#758092;--line:#DDE0E4;--bg:#F5F6F8;--ink:#1F2329;--sub:#646A73;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{width:100%;max-width:100%;background:#fff;color:var(--ink);font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;padding:8px 4px;}
+  .title{font-size:18px;font-weight:700;color:var(--main);margin:4px 0 2px;}
+  .sub{font-size:13px;color:var(--sub);margin-bottom:12px;}
+  .group{border:1px solid var(--line);border-radius:6px;margin-bottom:10px;overflow:hidden;}
+  .group-head{display:flex;align-items:center;gap:8px;padding:6px 12px;font-size:14px;font-weight:700;color:#fff;}
+  .g-p0{background:var(--main);}
+  .g-p1{background:var(--aux);}
+  .g-p2{background:#7C7C7C;}
+  .badge{display:inline-block;font-size:12px;line-height:1;padding:2px 8px;border-radius:10px;color:#fff;font-weight:600;vertical-align:1px;}
+  .row{display:grid;grid-template-columns:150px 1fr 190px;gap:8px;padding:8px 12px;border-top:1px solid var(--line);align-items:start;}
+  .row:first-of-type{border-top:none;}
+  .row:nth-child(odd){background:var(--bg);}
+  .algo{font-size:14px;font-weight:700;color:var(--main);line-height:1.35;}
+  .algo small{display:block;font-weight:400;color:var(--sub);font-size:12px;margin-top:2px;}
+  .paper{font-size:13px;line-height:1.4;color:var(--ink);}
+  .paper b{color:var(--main);}
+  .verify{font-size:13px;line-height:1.4;color:var(--sub);}
+  .verify b{color:var(--ink);}
+  .foot{font-size:12px;color:var(--sub);line-height:1.5;}
+  @media (max-width:640px){.row{grid-template-columns:1fr;gap:4px;}.verify{margin-top:2px;}}
+</style>
+</head>
+<body>
+<div class="title">独有算法实现路线总览：10 项全部有解</div>
+<div class="sub">OpenSuperDEA M0 预研 · 数据口径：官方功能清单（maxdea.com/Features_X.htm，访问 2026-10-24）+ v4.0 调研报告 · P0=有开源对拍；P1=论文+算例自行实现；P2=高风险延后</div>
+
+<div class="group">
+  <div class="group-head g-p0">P0 · 有开源对拍（4 项，M5 先行批）</div>
+  <div class="row"><div class="algo">MinDS 最小距离强前沿<small>Closest Target · 强单调</small></div><div class="paper"><b>Zhu 2018</b>（MILP 强单调）→ <b>Zhu 2022</b>（扩展面）；Aparicio-Pastor 2014 / Fukuyama 2014（强单调机制）</div><div class="verify"><b>对拍：</b>deaR model_addmin（4 RTS）<br><b>算例：</b>Airlines 28 / Sekitani-Zhao 2023</div></div>
+  <div class="row"><div class="algo">博弈交叉效率<small>Nash 均衡</small></div><div class="paper"><b>Liang 2008</b>（OR 56:1278-1288）→ VRS 版 Wu-Liang-Chen 2009；Wu-Liang-Zha 2009（ORSJ 开放全文）</div><div class="verify"><b>对拍：</b>DEAPack game_cross_efficiency<br><b>算例：</b>Liang 2008</div></div>
+  <div class="row"><div class="algo">HMB 指数<small>Hicks-Moorsteen TFP</small></div><div class="paper"><b>Bjurek 1996</b> 奠基；<b>O'Donnell 2012</b> 分解</div><div class="verify"><b>对拍：</b>R productivity + DEAPack<br><b>算例：</b>面板双实现互证</div></div>
+  <div class="row"><div class="algo">AR / Cone 受限乘数</div><div class="paper"><b>Charnes 1990</b>（Cone Ratio）；Thompson 1990 + Wong-Beasley 1990（AR）</div><div class="verify"><b>对拍：</b>DEAPack cone_ratio + PyDEA AR<br><b>算例：</b>Kansas 农场 1990</div></div>
+</div>
+
+<div class="group">
+  <div class="group-head g-p1">P1 · 论文 + 算例自行实现（6 项）</div>
+  <div class="row"><div class="algo">FDEF 全维有效面</div><div class="paper"><b>Jahanshahloo 2013</b>（IJIM，开放全文，CRS MILP 枚举）；QHULL 计算几何（VRS）；Rafati-Maleki 2018 超平面替代</div><div class="verify"><b>算例：</b>IJIM 2013 / Lins 2025 公共招标</div></div>
+  <div class="row"><div class="algo">最小距离弱有效前沿</div><div class="paper"><b>Charnes-Rousseau-Semple 1996</b>（JPA 7:5-18）；Mehdiloo-Podinovski 2021（EJOR，开放 PDF）概念对照</div><div class="verify"><b>算例：</b>JPA 1996</div></div>
+  <div class="row"><div class="algo">EBM 混合距离</div><div class="paper"><b>Tone-Tsutsui 2010</b>（EJOR）+ GRIPS DP09-21 开放全文（完整公式）</div><div class="verify"><b>算例：</b>GRIPS ρ=1.471 / ε=0.529 精确复现</div></div>
+  <div class="row"><div class="algo">Cluster 8 基准</div><div class="paper"><b>Seiford-Zhu 2003</b>（开放全文已精读：分层 + attractiveness/progress + VJ 版）；Morita 2005（SBM 版）；Lim 2011（交叉效率版）</div><div class="verify"><b>算例：</b>32 打印机黄金数据（E¹-E⁴ + Table 3-6）</div></div>
+  <div class="row"><div class="algo">修正 SBM</div><div class="paper"><b>Sharp-Liu-Meng 2007</b>（自然负数据两阶段）；Lin-Yang-Huang 2019（C&amp;IE 135:39-52）</div><div class="verify"><b>算例：</b>Sharp 2007</div></div>
+  <div class="row"><div class="algo">Malmquist 多参比<small>7 种参比</small></div><div class="paper">Caves 1982 / Färe 1992/94；<b>Global</b>（Pastor-Lovell 2005）/ <b>Sequential</b>（Shestalova 2003）/ <b>Window</b>（Asmild 2004）</div><div class="verify"><b>对拍：</b>DEAPack + deaR + productivity 三实现互证</div></div>
+</div>
+
+<div class="foot">说明：10 项全部具备「论文路线 + 验证手段」双闭环，是「无需从零发明」结论的直接证据。P2 高风险项（FDEF NDRS/NIRS、Weak EF 投影不唯一性）已在报告 §9 列明缓解方案。来源：v4.0 独有算法调研报告（research_docs/unique_algorithms_survey.md）。</div>
+</body>
+</html>

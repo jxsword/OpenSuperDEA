@@ -1,0 +1,10 @@
+# src/adapters/ 目录级豁免配置
+#
+# 本目录集中存放直接调用第三方库 API 的胶水代码（不做命名封装）。
+# 第三方 API 的名称（及其宏展开生成的符号）不受本仓库命名规范约束，
+# 因此此处关闭 readability-identifier-naming，其余检查（clang-analyzer、
+# performance 等）仍继承仓库根 .clang-tidy 继续生效。
+#
+# clang-tidy 按被检查文件所在目录向上查找配置，本文件仅对本目录内文件生效。
+InheritParentConfig: true
+Checks: '-readability-identifier-naming'
