@@ -2,6 +2,11 @@
 # 目标名 snake_case（naming_convention.md §四）；目录职责见 design_docs/01_overall_design.md §5
 add_library(opensuperdea_core STATIC
     adapters/highs_adapter.cpp
+    cli/cli_app.cpp
+    core/dataset/csv_parser.cpp
+    core/dataset/dataset.cpp
+    core/dataset/dataset_builder.cpp
+    core/dataset/validator.cpp
 )
 
 # 引擎头以 src/ 为根（#include "core/..." / "adapters/..."），对测试与未来 GUI 复用开放
@@ -9,7 +14,7 @@ target_include_directories(opensuperdea_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Eigen 随 core 公共头暴露（数据矩阵底座）；HiGHS 仅适配层 .cpp 接触，不外泄（DR-004）
 target_link_libraries(opensuperdea_core PUBLIC Eigen3::Eigen)
-target_link_libraries(opensuperdea_core PRIVATE highs::highs)
+target_link_libraries(opensuperdea_core PRIVATE highs::highs CLI11::CLI11)
 
 add_executable(opensuperdea main.cpp)
-target_link_libraries(opensuperdea PRIVATE opensuperdea_core CLI11::CLI11)
+target_link_libraries(opensuperdea PRIVATE opensuperdea_core)
