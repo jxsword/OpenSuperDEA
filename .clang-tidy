@@ -12,6 +12,7 @@ Checks: '
   -modernize-use-trailing-return-type,
   google-*,
   -google-build-header-guard,
+  -google-readability-avoid-underscore-in-googletest-name,
   readability-*,
   -readability-magic-numbers,
   -readability-function-cognitive-complexity,
@@ -30,6 +31,10 @@ Checks: '
 # + google-*                Google 风格中与本文档不冲突的部分（显式单参构造、
 #                           头文件全局命名空间等）
 # - google-build-header-guard              本文档未约定头文件守卫格式，避免强推路径式命名
+# - google-readability-avoid-underscore-in-googletest-name
+#                                          测试用例名按 FR 追溯约定 TEST(Suite, FR_XXX_Case)
+#                                          （design_docs/04 册 §7，NFR-MAINT-003）必然含下划线，
+#                                          该检查与项目追溯约定冲突，关闭
 # + readability-identifier-naming          命名强制，规则见下（对应文档 §1）
 # - readability-magic-numbers              DEA 算法代码含大量数值常数，噪音过大
 # - readability-function-cognitive-complexity  复杂度阈值告警属重构建议，不作提交门禁
