@@ -189,19 +189,19 @@ EC = d^{t+1}(x_{t+1}, y_{t+1}) / d^t(x_t, y_t)；TC = MI / EC
 
 ```mermaid
 gitGraph
-    commit id: "C++20 基线（已完成）"
-    branch feature/m2-registry-radial
-    commit id: "feat(m2): 注册表+参考集+径向族+乘子+超效率+规模分解"
-    checkout develop
-    merge feature/m2-registry-radial
-    branch feature/m2-nonradial-ddf
-    commit id: "feat(m2): SBM/ERM/加性族/DDF/RDM/成本收益/FDH"
-    checkout develop
-    merge feature/m2-nonradial-ddf
-    branch feature/m2-cross-window-tfp
-    commit id: "feat(m2): 交叉效率/窗口/偏好/相邻 Malmquist + 对拍接线"
-    checkout develop
-    merge feature/m2-cross-window-tfp
+   commit id: "cpp20-baseline"
+   branch feature-m2-registry-radial
+   commit id: "registry-radial-multiplier"
+   checkout main
+   merge feature-m2-registry-radial
+   branch feature-m2-nonradial-ddf
+   commit id: "sbm-erm-additive-cost-fdh"
+   checkout main
+   merge feature-m2-nonradial-ddf
+   branch feature-m2-cross-window-tfp
+   commit id: "cross-window-pref-malmquist"
+   checkout main
+   merge feature-m2-cross-window-tfp
 ```
 
 - 分支 1 即切 C++20 已就位（本册前置完成）；每分支合入前 ctest + 对拍全绿；
