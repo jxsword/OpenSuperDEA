@@ -21,23 +21,34 @@ if [ ! -w /data/home-sf ]; then
     sudo mkdir -p /data/opensuperdea && sudo chown "$(whoami)" /data/opensuperdea
     echo "已创建 /data/opensuperdea"
 fi
-echo "--- R 栈（对齐 tests/parity/refimpl/versions.lock 的 R 4.5.x）---"
+echo "--- R 栈（对齐 tests/parity/refimpl/versions.lock 的 R 4.5.x；apt 输出可见防假死）---"
+export DEBIAN_FRONTEND=noninteractive
 if ! command -v Rscript >/dev/null; then
-    sudo apt-get update -qq
-    if ! sudo apt-get install -y --no-install-recommends software-properties-common dirmngr >/dev/null 2>&1; then
-        echo "警告：software-properties-common 安装失败"
+    # CRAN 官方仓库优先（R 4.5.x）；密钥/仓库任一步失败自动退回发行版 R 并记录
+    sudo apt-get install -y --no-install-recommends wget ca-certificates gnupg
+    if wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc |
+        sudo tee /etc/apt/trusted.gpg.d/cran_ubuntu.asc >/dev/null; then
+        UB_CODENAME=$(. /etc/os-release && echo "$VERSION_CODENAME")
+        echo "deb https://cloud.r-project.org/bin/linux/ubuntu ${UB_CODENAME}-cran40/" |
+            sudo tee /etc/apt/sources.list.d/cran-r.list
+        sudo apt-get update 2>&1 | tail -3
+        echo "--- 安装 R（CRAN 源，数分钟，输出已可见）---"
+        sudo apt-get install -y --no-install-recommends r-base r-base-dev && R_SRC="cran" || true
+    else
+        echo "CRAN 密钥获取失败，退回发行版 R"
     fi
-    # CRAN apt 仓库优先；不可达则退回发行版 R 并记录（env.txt 留痕）
-    sudo add-apt-repository -y "cran-r" 2>/dev/null || true
-    if ! sudo apt-get install -y --no-install-recommends r-base r-base-dev >/dev/null 2>&1; then
-        echo "警告：R 安装失败（parity 套件将不可用，其余不受影响）"
+    if ! command -v Rscript >/dev/null; then
+        echo "--- 退回发行版 R ---"
+        sudo apt-get install -y --no-install-recommends r-base r-base-dev && R_SRC="distro" ||
+            echo "警告：R 安装失败（parity 套件将不可用，其余不受影响）"
     fi
     R_V=$(Rscript -e 'cat(as.character(getRversion()))' 2>/dev/null || echo "未装")
-    echo "R 版本: $R_V（非 4.5.x 时对拍结果标注差异）"
+    echo "R 版本: $R_V（来源 ${R_SRC:-未知}；非 4.5.x 时对拍结果标注差异）"
 else
     echo "R 已安装：$(Rscript -e 'cat(as.character(getRversion()))')"
 fi
-sudo apt-get install -y --no-install-recommends r-base-dev gfortran libblas3 liblapack3 python3-pip >/dev/null
+echo "--- 依赖（r-base-dev/gfortran/blas/lapack/pip）---"
+sudo apt-get install -y --no-install-recommends r-base-dev gfortran libblas3 liblapack3 python3-pip
 echo "--- swapfile（内存 3.8G 无 swap，兜底编译峰值；推荐创建）---"
 if [ ! -f /data/swapfile ]; then
     read -r -p "创建 4G swapfile 于 /data/swapfile? [Y/n] " answer
