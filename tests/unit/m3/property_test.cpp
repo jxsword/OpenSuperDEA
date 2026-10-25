@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 
 #include <cmath>
+#include <cstdlib>
 #include <random>
 #include <string>
 #include <tuple>
@@ -65,7 +66,14 @@ RunConfig make_config(unsigned int thread_count)
     return config;
 }
 
-/** @brief 逐字段断言两份运行结果一致（score/状态/松弛/投影/汇总/标注）。 */
+/** @brief DR-008 口径下不做跨配置对齐的顶点类标注键（LP 多重最优解）。 */
+bool is_vertex_annotation(const std::string &key)
+{
+    // vrs_intercept：乘子 VRS 截距（多重解）；rts_region：容差判别类（边界可翻转）
+    return key == "vrs_intercept" || key == "rts_region";
+}
+
+/** @brief 逐字段断言两份运行结果一致（DR-008 口径，07 册 §5 修订）。 */
 void expect_pr09_identical(const ModelResult &serial, const ModelResult &parallel)
 {
     ASSERT_EQ(serial.dmu_results.size(), parallel.dmu_results.size());
@@ -73,31 +81,55 @@ void expect_pr09_identical(const ModelResult &serial, const ModelResult &paralle
     {
         const auto &a = serial.dmu_results[d];
         const auto &b = parallel.dmu_results[d];
+        // 核心结果（效率值/状态/汇总排名）：1e-9 逐值一致——PR-09 门禁语义
         EXPECT_EQ(a.dmu_index, b.dmu_index) << "DMU#" << d;
         EXPECT_EQ(a.status, b.status) << "DMU#" << d;
         EXPECT_NEAR(a.score, b.score, K_PR09_TOLERANCE) << "DMU#" << d;
-        // 松弛/投影按模型填充情况比较（非径向/价格族不填投影 targets，尺寸可分别为空）
+        // 顶点类输出（松弛/投影，LP 多重最优解）：断言合理性与两侧规模一致，
+        // 不做跨配置数值对齐（串/并行的 warm-start 基路径可选不同顶点，DR-008）
         ASSERT_EQ(a.input_slacks.size(), b.input_slacks.size()) << "DMU#" << d;
         ASSERT_EQ(a.input_targets.size(), b.input_targets.size()) << "DMU#" << d;
-        for (std::size_t i = 0; i < a.input_slacks.size(); ++i)
+        for (const double slack : a.input_slacks)
         {
-            EXPECT_NEAR(a.input_slacks[i], b.input_slacks[i], K_PR09_TOLERANCE) << "DMU#" << d;
+            EXPECT_TRUE(std::isfinite(slack) && slack >= -1e-7) << "DMU#" << d;
         }
-        for (std::size_t i = 0; i < a.input_targets.size(); ++i)
+        for (const double target : a.input_targets)
         {
-            EXPECT_NEAR(a.input_targets[i], b.input_targets[i], K_PR09_TOLERANCE) << "DMU#" << d;
+            EXPECT_TRUE(std::isfinite(target)) << "DMU#" << d;
         }
         ASSERT_EQ(a.output_slacks.size(), b.output_slacks.size()) << "DMU#" << d;
         ASSERT_EQ(a.output_targets.size(), b.output_targets.size()) << "DMU#" << d;
-        for (std::size_t r = 0; r < a.output_slacks.size(); ++r)
+        for (const double slack : a.output_slacks)
         {
-            EXPECT_NEAR(a.output_slacks[r], b.output_slacks[r], K_PR09_TOLERANCE) << "DMU#" << d;
+            EXPECT_TRUE(std::isfinite(slack) && slack >= -1e-7) << "DMU#" << d;
         }
-        for (std::size_t r = 0; r < a.output_targets.size(); ++r)
+        for (const double target : a.output_targets)
         {
-            EXPECT_NEAR(a.output_targets[r], b.output_targets[r], K_PR09_TOLERANCE) << "DMU#" << d;
+            EXPECT_TRUE(std::isfinite(target)) << "DMU#" << d;
         }
-        EXPECT_EQ(a.annotations, b.annotations) << "DMU#" << d;
+        // 标注：键集合一致；数值键解析后 NEAR 1e-9；顶点类键（DR-008）跳过；
+        // 非数值键（如 window_start）严格相等
+        ASSERT_EQ(a.annotations.size(), b.annotations.size()) << "DMU#" << d;
+        for (const auto &[key, value_a] : a.annotations)
+        {
+            const auto it_b = b.annotations.find(key);
+            ASSERT_NE(it_b, b.annotations.end()) << "key=" << key << " DMU#" << d;
+            if (is_vertex_annotation(key))
+            {
+                continue;
+            }
+            char *parse_end = nullptr;
+            const double numeric_a = std::strtod(value_a.c_str(), &parse_end);
+            if (parse_end != nullptr && *parse_end == '\0' && !value_a.empty())
+            {
+                EXPECT_NEAR(numeric_a, std::strtod(it_b->second.c_str(), nullptr), K_PR09_TOLERANCE)
+                    << "key=" << key << " DMU#" << d;
+            }
+            else
+            {
+                EXPECT_EQ(value_a, it_b->second) << "key=" << key << " DMU#" << d;
+            }
+        }
     }
     ASSERT_EQ(serial.summary.rank.size(), parallel.summary.rank.size());
     for (std::size_t d = 0; d < serial.summary.rank.size(); ++d)

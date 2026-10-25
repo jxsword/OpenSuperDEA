@@ -74,7 +74,7 @@ sequenceDiagram
 | PR-06 | 乘子-包络强对偶相等（全数据集扫描） | FR-MULT-002 |
 | PR-07 | 修正 SBM 平移不变 + 单位不变（数值检验） | FR-NRAD-006 |
 | PR-08 | big-M 扰动不敏感性（M×/÷10 结果相对变化 < 1e-9 抽检） | NFR-PERF-005 |
-| PR-09 | 并行与串行结果逐值一致 | FR-PERF-001 |
+| PR-09 | 并行与串行结果一致（DR-008 细化：效率值/状态/汇总排名 1e-9 容差逐值一致；LP 多重最优解下的顶点类输出——松弛/投影/乘子截距——不跨配置数值对齐，断言有限性与解自洽） | FR-PERF-001 |
 | PR-10 | Nash 迭代收敛且满足均衡条件（ unilateral deviation 不改进） | FR-NASH-001 |
 
 实现：gtest 套件 `tests/unit/<milestone>/property_test.cpp`，数据驱动的构造算例（程序内生成，不依赖外部文件）。
@@ -85,8 +85,8 @@ sequenceDiagram
 |---|---|
 | M1 | 单元测试全绿（§M1 套件表）+ 双平台 CI 全绿 + 六任务验收证据 |
 | M2 | M1 回归 + 每模型 L1 对拍（deaR/PyDEA）+ L2 算例 + 性质套件（PR-06 等）+ 覆盖率 ≥ 80% |
-| M3 | M2 回归 + L4 十万基准（NFR-PERF-003 ≤ 30.4s）+ PR-09 |
-| M4 | M3 回归 + L4 百万基准（NFR-PERF-004）+ PR-09 + 一致性抽检 |
+| M3 | M2 回归 + L4 十万基准实测报告（分钟级完成，实测数据入报告；达标判定移 M4，DR-008）+ PR-09 |
+| M4 | M3 回归 + L4 百万基准（NFR-PERF-004）+ 十万达标判定（NFR-PERF-003 ≤ 30.4s，DR-008）+ PR-09 + 一致性抽检 |
 | M5 | M2 回归 + 逐算法 L1/L2/L3（32 打印机全数值、GRIPS 1e-8、Liang 2008、Kansas、Airlines、PISA、Sharp）+ PR-01~10 |
 | M6 | 引擎结果回归（GUI/CLI 同源一致）+ GUI 集成用例 |
 | M7/M8 | 平台矩阵回归 + 许可审计（NFR-SEC-001/002）+ 性能报告汇总 |

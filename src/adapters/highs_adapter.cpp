@@ -195,6 +195,11 @@ struct SolveSession::Impl
         // 全局 HighsTaskExecutor，其 ExecutorHandle 的创建/销毁在多实例并发下存在
         // 数据竞争（TSAN 实证），且并行只应发生在外层 DMU 级（FR-PERF-001）
         highs.setOptionValue("threads", 1);
+        // DR-008（F-006 实测）：DEA 包络 LP 为「行数 << 列数」窄矩阵，presolve 每次
+        // run 的全矩阵扫描化简是纯负担（10 万列实测 5.3×）；固定单纯形求解器避免
+        // 内点/交叉路径丢失基，保障热启动的基复用
+        highs.setOptionValue("presolve", "off");
+        highs.setOptionValue("solver", "simplex");
     }
 
     /** @brief 全量路径：构造 HighsModel 整模传入并刷新缓存（与新建实例同参）。 */
@@ -248,14 +253,16 @@ struct SolveSession::Impl
         return finish_and_run();
     }
 
-    /** @brief 求解收尾：不可行/无界结果可能伴随零目标探测篡改 cost → 置脏下次全量。 */
+    /** @brief 求解收尾：不可行/无界结果可能伴随零目标探测篡改 cost → 置脏并同步缓存。 */
     SolveOutcome finish_and_run()
     {
         const SolveOutcome outcome = run_highs(highs);
         if (outcome.status == SolveStatus::INFEASIBLE || outcome.status == SolveStatus::UNBOUNDED)
         {
-            // 零目标二次探测会把 cost 清零（03 册 §2.3 歧义路径），缓存自此不可信
+            // 零目标二次探测会把 cost 清零（03 册 §2.3 歧义路径）：置脏 + 缓存对齐
+            // HiGHS 实际状态（下次增量比对据此把 cost 改回，基则被丢弃回退冷启动）
             model_dirty = true;
+            std::fill(col_cost.begin(), col_cost.end(), 0.0);
         }
         return outcome;
     }
@@ -272,7 +279,9 @@ struct SolveSession::Impl
         const bool integrality_changed =
             has_integrality_request != integrality_present ||
             (has_integrality_request && integrality != *integrality_in);
-        const bool structure_same = has_model && !model_dirty && integrality_changed == false &&
+        // model_dirty 不阻断增量（DR-008）：探测篡改的 cost 由下方差集比对改回，
+        // 被污染的基在尾部按需丢弃——结构指纹仍以稀疏模式为准
+        const bool structure_same = has_model && integrality_changed == false &&
                                     variable_count == problem.variable_count &&
                                     constraint_count == problem.constraint_count &&
                                     new_starts == starts && new_indices == indices;
@@ -400,10 +409,16 @@ struct SolveSession::Impl
         }
         values = new_values;
 
-        // 冷启动：清除基与求解器状态，保证与新建实例同起点（07 册 §3.2）
-        if (highs.clearSolver() != HighsStatus::kOk)
+        // 冷/热启动选择（DR-008，F-006 实测 7.8×）：模型未被探测篡改时保留最优基，
+        // HiGHS 对偶单纯形 warm start 直接再求解（同 worker 内逐 DMU 序列的基高度
+        // 相似）；被篡改（model_dirty）则 clearSolver 丢弃基、增量修改后冷启动求解
+        if (model_dirty)
         {
-            return solve_full(problem, integrality_in);
+            if (highs.clearSolver() != HighsStatus::kOk)
+            {
+                return solve_full(problem, integrality_in);
+            }
+            model_dirty = false;
         }
         return finish_and_run();
     }
