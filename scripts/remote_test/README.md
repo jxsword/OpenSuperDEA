@@ -28,7 +28,7 @@ scripts/remote_test/remote_test.sh fetch 20261025_  # 补拉历史结果
 ```text
 /data/home-sf/opensuperdea/{src,build,build-coverage,vcpkg_installed}
 /data/home-sf/opensuperdea-remote/<run-id>/{runner.sh,status,progress.log,results/}
-/data/vcpkg（checkout a1cae005c3，与本机一致）  /data/Rlib（R_LIBS_USER）  /data/swapfile（4G）
+/data/home-sf/vcpkg（checkout a1cae005c3，与本机一致）  /data/home-sf/Rlib（R_LIBS_USER）  /data/swapfile（4G）
 ```
 
 ## 关键约束与差异（务必知悉）

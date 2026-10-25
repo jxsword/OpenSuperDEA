@@ -7,7 +7,7 @@ set -euo pipefail
 
 HOST=juzdata
 VCPKG_COMMIT=a1cae005c3   # 与本机一致（git -C ~/vcpkg rev-parse --short=10 HEAD）
-R_LIB_DIR=/data/Rlib
+R_LIB_DIR=/data/home-sf/Rlib
 SWAP_FILE=/data/swapfile
 
 # ---------- [1/2] sudo 段：脚本落远端文件后 ssh -t 执行（交互可靠） ----------
@@ -84,12 +84,12 @@ STATUS=/home/sf/provision.status
 rm -f "\$STATUS"
 {
 echo "--- vcpkg（构建 -j2，约 10-20 分钟）---"
-if [ ! -d /data/vcpkg ]; then
-    git clone https://github.com/microsoft/vcpkg /data/vcpkg
+if [ ! -d /data/home-sf/vcpkg ]; then
+    git clone https://github.com/microsoft/vcpkg /data/home-sf/vcpkg
 fi
-git -C /data/vcpkg fetch origin >/dev/null 2>&1 || true
-git -C /data/vcpkg checkout "\$VCPKG_COMMIT"
-/data/vcpkg/bootstrap-vcpkg.sh -disableMetrics
+git -C /data/home-sf/vcpkg fetch origin >/dev/null 2>&1 || true
+git -C /data/home-sf/vcpkg checkout "\$VCPKG_COMMIT"
+/data/home-sf/vcpkg/bootstrap-vcpkg.sh -disableMetrics
 echo "--- R 用户库（R_LIBS_USER=\$R_LIB_DIR）---"
 mkdir -p "\$R_LIB_DIR"
 export R_LIBS_USER="\$R_LIB_DIR"
@@ -111,7 +111,7 @@ mkdir -p "\$BASE"
     Rscript -e 'cat("R", as.character(getRversion()), "\n")'
     Rscript -e 'cat("deaR", as.character(packageVersion("deaR")), "\n")' 2>/dev/null
     Rscript -e 'cat("productivity", as.character(packageVersion("productivity")), "\n")' 2>/dev/null
-    /data/vcpkg/vcpkg version 2>/dev/null | head -1
+    /data/home-sf/vcpkg/vcpkg version 2>/dev/null | head -1
     python3 -m gcovr --version 2>/dev/null | head -1
 } > "\$BASE/env.txt" 2>&1
 echo "provision 完成"
