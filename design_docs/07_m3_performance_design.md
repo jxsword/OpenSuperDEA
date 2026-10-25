@@ -1,7 +1,8 @@
 # 07 M3 性能优化详细设计（M3 Performance Design）
 
-> 版本：V1.1 ｜ 2026-10-25 ｜ 依据：SRS V1.1 §3.21/§4.1/§8.2、01 总体设计 §4.4、04 验证计划 §4/§5、M2 引擎现状（06 册交付物与代码实测）
+> 版本：V1.2 ｜ 2026-10-25 ｜ 依据：SRS V1.2 §3.21/§4.1/§8.2、01 总体设计 §4.4、04 验证计划 §4/§5、M2 引擎现状（06 册交付物与代码实测）
 > V1.1 变更：§4 数据集策略按用户裁决更新（对数正态 + 强有效比例控制、10 组统计口径对齐官方、datasets/ 独立目录并提前备齐 M3-M5 全部数据资产）。
+> V1.2 变更（DR-008）：§3.2 求解语义由「clearSolver 冷启动」改为「基复用热启动（可回退）」；§5 PR-09 口径细化；§3.1 新增 presolve off 实测依据；NFR-PERF-003 达标判定移 M4。
 > 范围：M3 全部交付的性能设计——FR-PERF-001（DMU 级并行求解框架）、FR-PERF-004（稀疏存储与分块构造）、FR-PERF-005（bench 基准 harness）。
 > 核心原则：数值语义不变（01 册 §4.4「两个正交开关，不改变数值语义」）——PR-09（并行与串行结果逐值一致，1e-9 级，04 册 §4）为 M3 固定门禁；达标线 NFR-PERF-003：10 万 DMU 3×3 BCC ≤ 30.4s（官方 25.32s × 1.2，P-002）。
 
@@ -132,7 +133,7 @@ sequenceDiagram
     S-->>W: SolveOutcome
 ```
 
-- **数值语义论证**：差异条目比对为 O(nnz) 只读比较（无分配，成本远低于 5 MB 写拷贝）；修改后的矩阵内容与全量 passModel 逐项相同，`clearSolver()` 清除基与求解器状态使每次 `run()` 均为冷启动——与「新建实例 + passModel」路径的单纯形起点一致，目标 bit 级一致。差异条目比例超过阈值（如 5%）时直接回退 passModel 全量路径。
+- **数值语义论证**：差异条目比对为 O(nnz) 只读比较（无分配，成本远低于 5 MB 写拷贝）；修改后的矩阵内容与全量 passModel 逐项相同。DR-008（F-006 实测热启动 7.8×）：模型未被探测篡改时**保留最优基**——HiGHS 对偶单纯形 warm start 直接再求解（同 worker 内逐 DMU 序列的基高度相似），探测篡改（model_dirty）才 clearSolver 冷启动；presolve off + solver=simplex 固定（窄矩阵 presolve 实测 5.3× 纯负担，且内点路径丢失基）。LP 最优目标值唯一（实测 100/100 DMU bit 级一致），顶点类输出（松弛/投影/乘子截距）在多重最优解下不跨配置对齐（PR-09 口径随之细化）。差异条目比例超过阈值（如 5%）时直接回退 passModel 全量路径。
 - **bit 级一致专项单测**（阶段 2 门禁）：同一 LP 分别走「新建实例全量」与「会话增量」双路径，断言 `primal_solution`、`objective_value` 严格相等（`==`，非容差）；若 HiGHS 存在隐藏会话状态导致不一致，回退全量路径并在 m3 测试报告 §3 记录设计偏差（行为退化不阻塞交付）。
 - 会话生命周期：`parallel_for` 任务体内使用 worker 本地会话（任务块内连续复用），不跨运行持久；MILP（FDH）同接口支持。
 - 适用条件：参考集 `ALL` 的常规模型（含超效率的 `EXCLUDE_SELF`——同 n−1 规模亦稳定复用）；窗口/Malmquist 参考集逐窗变化 → 结构指纹不一致时自然回退全量路径，正确性不受影响。
@@ -195,7 +196,7 @@ bench/
 - 新增 `tests/unit/m3/property_test.cpp`（04 册 §4 实现约定路径），新 gtest 目标 `opensuperdea_unit_tests_m3`（标签 `unit;m3`，对齐 M1/M2 组织方式）：
   - 程序内生成构造算例（500 DMU × 3×3，固定 seed，不依赖外部文件）；
   - 代表模型集全跑：bcc/ccr（径向）、sbm（非径向）、multiplier、ddf、cost（价格）、cross_efficiency、window、malmquist；
-  - 每模型 `thread_count=1` 与 `thread_count=4`（CI runner 4 核安全）双跑，断言全部输出字段（score/松弛/投影/summary 的 rank/mean/median/efficient_count）逐值一致，容差 1e-9（04 册口径；实现目标为 bit 级一致）；
+  - 每模型 `thread_count=1` 与 `thread_count=4`（CI runner 4 核安全）双跑，断言效率值/状态/汇总排名 1e-9 逐值一致；顶点类输出（松弛/投影/乘子截距——LP 多重最优解）断言有限性与规模一致，不跨配置数值对齐（DR-008 细化，04 册 §4 PR-09 行）；
   - `thread_count=auto` 冒烟一例（不比对耗时，仅验证可运行）；
   - 交叉效率 stage1→stage2 段间同步、窗口/Malmquist 显式索引各设针对性断言。
 - 覆盖率维持：并行框架用线程数注入测试（异常路径、窃取路径、退化串行路径）覆盖，门禁 ≥80%（P-009）不变。
@@ -236,7 +237,7 @@ gitGraph
 | # | 风险 | 缓解 |
 |---|---|---|
 | 1 | HiGHS 线程安全 | 每 worker 独立 `SolveSession`/实例，无共享可变状态；`output_flag=false` + `random_seed=0` 已关日志与随机路径；PR-09 多线程压测 + CI 双平台验证 |
-| 2 | HiGHS 确定性（01 册 §4.4「固定线程内层」） | 并行仅在外层 DMU 级；不设置 HiGHS `threads` 选项（保持默认单线程内层）；`clearSolver()` 保证冷启动 |
+| 2 | HiGHS 确定性（01 册 §4.4「固定线程内层」） | 并行仅在外层 DMU 级；显式 `threads=1`（默认 auto 启用全局执行器，多实例并发存在 dispose 竞争，TSAN 实证）+ presolve off + solver=simplex；热启动保留基（DR-008），探测篡改路径回退冷启动 |
 | 3 | 增量路径数值分歧 | §3.2 双路径严格相等专项单测锁死；失败即回退全量路径并记录设计偏差（不阻塞交付） |
 | 4 | Windows/MSVC 差异 | `std::jthread`/`stop_token` MSVC≥19.29 支持（C++20 基线内）；CI Windows 段跑 PR-09；`hardware_concurrency` 差异由 `--threads` 显式覆盖并在报告记录实际值 |
 | 5 | 30.4s 达标不确定 | 实测串行基线：10 万 3×3 BCC ≥ 10m58s（F-001 修复前失败中止），差距 ≥21 倍确认优化空间需求；分级缓解：F-001 修复 → 并行 → O(nnz) 聚合 → SolveSession 逐级补足；全部用尽仍不达标则停止并汇报实测数据与候选方案（参考点采样属 M4 FR-PERF-002，不擅自提前） |

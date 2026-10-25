@@ -250,8 +250,8 @@ int run_solve(const std::string &model_id, const std::string &data_path, bool as
               const std::string &rts_text, bool rts_explicit, bool super_efficiency,
               const std::string &direction, const std::string &method,
               const std::string &virtual_inputs_text, const std::string &virtual_outputs_text,
-              std::size_t window_width, const std::string &format, const std::string &outdir,
-              std::ostream &out, std::ostream &err)
+              std::size_t window_width, unsigned int thread_count, const std::string &format,
+              const std::string &outdir, std::ostream &out, std::ostream &err)
 {
     if (model_id.empty())
     {
@@ -292,6 +292,7 @@ int run_solve(const std::string &model_id, const std::string &data_path, bool as
         registry::RunConfig panel_config;
         panel_config.data_sha1 = file_sha1(data_path);
         panel_config.version = VERSION_TEXT;
+        panel_config.thread_count = thread_count;
 
         result::ModelResult panel_result;
         try
@@ -428,6 +429,7 @@ int run_solve(const std::string &model_id, const std::string &data_path, bool as
     config.super_efficiency = super_efficiency;
     config.data_sha1 = file_sha1(data_path);
     config.version = VERSION_TEXT;
+    config.thread_count = thread_count;
 
     result::ModelResult model_result;
     try
@@ -556,6 +558,7 @@ int run_cli(int argc, char **argv, std::ostream &out, std::ostream &err)
     std::string solve_format = "csv";
     std::string solve_outdir = ".";
     bool solve_super = false;
+    unsigned int solve_threads = 0; // 并行线程数（FR-PERF-001）：0=自动；1=串行
     bool run_solve_cmd = false;
     auto *solve_cmd = app.add_subcommand("run", "求解模型（M2 注册表：径向族/乘子/规模效率）");
     solve_cmd->add_option("--model", solve_model, "模型标识（ccr/bcc/multiplier/scale_efficiency）")
@@ -577,6 +580,8 @@ int run_cli(int argc, char **argv, std::ostream &out, std::ostream &err)
     solve_cmd->add_option("--window", solve_window,
                           "窗口宽度 w（--panel + 底层模型时启用窗口分析）");
     solve_cmd->add_flag("--super", solve_super, "超效率（参考集剔除被评 DMU）");
+    solve_cmd->add_option("--threads", solve_threads,
+                          "并行线程数（FR-PERF-001）：0=自动（默认）；1=串行");
     solve_cmd->add_option("--format", solve_format, "结果格式 csv|json（默认 csv）");
     solve_cmd->add_option("-o,--outdir", solve_outdir, "结果输出目录（默认当前目录）");
     solve_cmd->callback([&] { run_solve_cmd = true; });
@@ -622,7 +627,8 @@ int run_cli(int argc, char **argv, std::ostream &out, std::ostream &err)
         return run_solve(solve_model, solve_data, solve_panel, solve_inputs, solve_outputs,
                          solve_orientation, rts_explicit ? solve_rts : "crs", rts_explicit,
                          solve_super, solve_direction, solve_method, solve_virtual_inputs,
-                         solve_virtual_outputs, window_width, solve_format, solve_outdir, out, err);
+                         solve_virtual_outputs, window_width, solve_threads, solve_format,
+                         solve_outdir, out, err);
     }
     return EXIT_OK;
 }

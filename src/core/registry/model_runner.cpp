@@ -9,6 +9,7 @@
 #include <cmath>
 #include <numeric>
 
+#include "core/parallel/work_stealing_pool.h"
 #include "model_registry.h"
 #include "reference_set.h"
 #include "solvable_model.h"
@@ -107,21 +108,25 @@ result::ModelResult run_model(const std::string &model_id, const dataset::Datase
     out.meta.version = config.version;
     out.meta.data_sha1 = config.data_sha1;
 
-    out.dmu_results.reserve(data.dmu_count());
-    for (std::size_t i = 0; i < data.dmu_count(); ++i)
-    {
-        SolveContext context;
-        context.data = &data;
-        context.dmu_index = i;
-        context.reference_indices = select_reference_set(kind, params, data.dmu_count(), i);
-        context.options = options;
-        if (config.super_efficiency)
-        {
-            // 超效率标志经选项传给模型（SBM 族据此切换 Tone 2002 LP；06 册 §4.2）
-            context.options.model_options["super"] = "1";
-        }
-        out.dmu_results.push_back(descriptor->solve(context));
-    }
+    // 逐 DMU 并行求解（FR-PERF-001，07 册 §2.3）：SolveContext 全只读、SolveFunction
+    // 工厂 lambda 无捕获，天然线程安全；结果预分配按索引无锁写入，顺序与数据集一致
+    out.dmu_results.resize(data.dmu_count());
+    const unsigned int run_threads = config.thread_count;
+    parallel::parallel_for(
+        data.dmu_count(), run_threads,
+        [&out, &data, &descriptor, &options, &config, kind, &params](std::size_t i) {
+            SolveContext context;
+            context.data = &data;
+            context.dmu_index = i;
+            context.reference_indices = select_reference_set(kind, params, data.dmu_count(), i);
+            context.options = options;
+            if (config.super_efficiency)
+            {
+                // 超效率标志经选项传给模型（SBM 族据此切换 Tone 2002 LP；06 册 §4.2）
+                context.options.model_options["super"] = "1";
+            }
+            out.dmu_results[i] = descriptor->solve(context);
+        });
     out.summary = summarize(out.dmu_results);
 
     const auto elapsed = std::chrono::steady_clock::now() - start_time;
