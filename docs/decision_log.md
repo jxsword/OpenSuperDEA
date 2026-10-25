@@ -64,3 +64,11 @@
 - 理由: 实测数据完备（score 100/100 bit 级一致、二阶段同构序列热启动同样适用）；30.4s 实为 M3 架构并行 + M4 算法加速的合力目标（SRS 原切分对 M3 两开关的能力假设被实测证伪）；热启动开关可回退、冷启动路径保留为对照。
 - 影响: src/adapters/highs_adapter.cpp（热启动/presolve 选项/探测后缓存对齐）、tests/unit/m3（PR-09 断言口径、session_test 语义）、design_docs/07 册 §3.2/§5/§8、04 册 §4 PR-09 行、SRS V1.2（§4.1 NFR-PERF-003 版本列、§8.1 追踪矩阵）、M3 测试报告门禁行
 - 记录时间 / 会话: 2026-10-25 / ZCode M3 会话（用户裁决 α + A）
+
+## DR-009 2026-10-25 云服务器远程测试工作流（juzdata）  [状态: 生效]
+- 背景: 68 例对拍、覆盖率全量、L4/M4 基准等 >20 分钟任务占用本机 8 核，与开发迭代互相阻塞；juzdata（2 核 3.8G、glibc 2.39、单核与本机打平且支持 AVX-512）具备承接条件。
+- 选项与权衡: 服务器本地构建-每轮只同步源码(本机 glibc 2.43 > 服务器 2.39 二进制不可直传，采用)；二进制直传(glibc 差异否决，弃用)；服务器跑性能门禁(2 核 {4,8} 线程无意义且环境不可控，弃用——门禁保持本机基线 P-002/P-014，服务器 bench 仅作观察/回归)。
+- 结论: scripts/remote_test/ 三件套（provision_server.sh 一次性装 R 栈/vcpkg@ a1cae005c3/swapfile+env.txt 档案；remote_test.sh 子命令 sync/run/status/fetch，tmux 会话 + 30s 轮询 + 结果回传 build-remote-results/；README 含差异与排障）。服务器目录全落 /data，构建/ctest 限 -j2 + 内存预检；bench suite 占位（threads {1,2,auto}），M3 harness 落地后接入。
+- 理由: 链路冒烟已验证（sync→tmux→轮询→fetch overall_exit=0）；异步化使本机开发与长跑任务解耦，M4 百万级依赖此基建。
+- 影响: scripts/remote_test/（新建）、docs/decision_log.md、M4 测试执行方式；不 push（P-003）
+- 记录时间 / 会话: 2026-10-25 / ZCode M3 会话（用户裁决执行顺序：A 之后、bench 之前）
