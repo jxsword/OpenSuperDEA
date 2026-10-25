@@ -9,7 +9,7 @@
 - **目标**：用 AI Agent（Zcode）+ C++ 全量实现商业软件 MaxDEA X 全部功能，项目代号 OpenSuperDEA。
 - **覆盖范围**：常规模型族 + 10 项独有算法（在线平台与开源工具均未实现）+ 万级 DMU 极速求解。
 - **形态**：CLI 先行（M1-M5）→ GUI 后置（M6，Qt6）；支持 Ubuntu（WSL）/ Windows，macOS 后期扩展。
-- **当前状态**：M0 预研完成；需求工程完成（SRS V1.2，DR-008 变更）；M1 验收（v0.1.0）；M2 验收（v0.2.0 已推送）；**M3 性能优化开发完成（2026-10-25，feature/m3-bench-freeze 收尾中：并行框架 + 稀疏会话 + 热启动（DR-008）+ 云测试工作流（DR-009）+ bench harness；ctest 111/111 + 对拍 68/68 + PR-09（DR-008 口径）+ TSAN/ASAN 清零；10 万 BCC 8 线程从 ≥8.1h 提升至分钟~小时级，30.4s 达标判定移 M4）**；测试报告 design_docs/reports/m3_test_report.md。
+- **当前状态**：M0 预研完成；需求工程完成（SRS V1.2，DR-008 变更）；M1 验收（v0.1.0）；M2 验收（v0.2.0 已推送）；**M3 性能优化验收完成（2026-10-26，v0.3.0 已推送：main e096367 + tag；原收尾中：并行框架 + 稀疏会话 + 热启动（DR-008）+ 云测试工作流（DR-009）+ bench harness；ctest 111/111 + 对拍 68/68 + PR-09（DR-008 口径）+ TSAN/ASAN 清零；10 万 BCC 8 线程从 ≥8.1h 提升至分钟~小时级，30.4s 达标判定移 M4）**；测试报告 design_docs/reports/m3_test_report.md。
 
 ## 2. 技术栈决策（已论证，勿推翻）
 
