@@ -10,6 +10,7 @@
  */
 #include <gtest/gtest.h>
 
+#include <array>
 #include <cmath>
 #include <utility>
 #include <vector>
@@ -71,11 +72,14 @@ TEST(SolveSession, BitwiseIdenticalOnHomogeneousSequence)
     // min t - (1/2)s1 - (1/3)s2 骨架省略，直接用 λ 型 LP：
     // 变量 [t, x1, x2]；行0: a*x1 + b*x2 - c*t ≤ 0；行1: x1 + x2 ≥ rhs
     opensuperdea::adapters::SolveSession session;
-    for (const auto &[a, b, c, rhs] : std::vector<std::array<double, 4>>{{1.0, 2.0, 1.0, 4.0},
-                                                                         {1.0, 2.0, 0.8, 6.0},
-                                                                         {2.0, 2.0, 0.8, 6.0},
-                                                                         {1.0, 2.0, 1.2, 3.5},
-                                                                         {1.5, 2.5, 1.0, 4.25}})
+    // 具名变量承载用例表：函数风格转换 + 嵌套 braced-init-list 内联于 range-for
+    // 是 GCC 扩展，MSVC 拒绝（C2440）——提出为具名 const 是两编译器通用的写法
+    const std::vector<std::array<double, 4>> cases = {{1.0, 2.0, 1.0, 4.0},
+                                                      {1.0, 2.0, 0.8, 6.0},
+                                                      {2.0, 2.0, 0.8, 6.0},
+                                                      {1.0, 2.0, 1.2, 3.5},
+                                                      {1.5, 2.5, 1.0, 4.25}};
+    for (const auto &[a, b, c, rhs] : cases)
     {
         const LpProblem problem = make_lp({1.0, 0.0, 0.0}, {0.0, 0.0, 0.0},
                                           {opensuperdea::solver::POSITIVE_INFINITY,
