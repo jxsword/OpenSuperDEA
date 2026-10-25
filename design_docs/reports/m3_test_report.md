@@ -50,9 +50,20 @@
 
 ## 4. L4 基准报告（P-014 硬件档案 + 官方口径矩阵）
 
-【QUICK_PLACEHOLDER——快速参考（seed1）】
+**1 万 DMU 3×3 BCC 全矩阵**（seed1，2026-10-26 bench slim，CPU：Core Ultra 9 275HX / 8 逻辑核 / 31Gi）：
 
-【FULL_PLACEHOLDER——门禁矩阵：10 万 3×3 BCC × 10 seeds × threads {1,2,4,8,auto}】
+| 规格 | threads | 耗时（秒） |
+|---|---|---|
+| 1万 3×3 BCC seed1 | 1 | 359.84 |
+| 1万 3×3 BCC seed1 | 2 | 240.64 |
+| 1万 3×3 BCC seed1 | 4 | 129.92 |
+| 1万 3×3 BCC seed1 | 8 | 82.06 |
+| 1万 3×3 BCC seed1 | auto | 80.52 |
+
+**10 万 DMU 3×3 BCC**（threads=8，2026-10-26 全量实测）：**5h07m57s**（RSS 峰值 1.73GB；10184/100000 有效）。threads 加速比与 per-DMU 难度长尾分析见 §3 与 F-007。
+
+> 原始数据：bench/results/20261026_015001/（不入库；官方 10-seeds 口径全矩阵留 M4 达标后采集——届时单 case 分钟级，10 组矩阵小时级内）。
+
 
 ## 5. 过程发现与设计偏差（tmp/m3_findings.md 摘要）
 
@@ -68,4 +79,4 @@
 
 - M4：FR-PERF-002/003（参考点采样/强有效集分化）补足 30.4s 与百万级（NFR-PERF-003/004 同关）；
 - 云服务器 provision 实测（DR-009 验证第 2 步，需用户在场一次）；
-- 覆盖率复测：【COVERAGE_PLACEHOLDER】（门禁 ≥80%，P-009）。
+- 覆盖率复测：**行覆盖 83.7%**（3271/3906，函数 95.1%；gcovr 8.6 + gcov-16，build-coverage；门禁 ≥80% 达标，P-009）。

@@ -49,13 +49,24 @@ ensure_data() { # ensure_data <dmu> <io>
 
 run_case() { # run_case <label> <csv> <model> <rts> <threads> → 追加一行原始数据
     local label=$1 csv=$2 model=$3 rts=$4 threads=$5
-    local out_dir
+    local out_dir rc=0
     out_dir=$(mktemp -d)
-    /usr/bin/time -f "%e %M" -o "$OUT/.time" \
-        "$BINARY" run --model "$model" --orientation in --rts "$rts" --data "$csv" \
-        --threads "$threads" --format csv -o "$out_dir" >/dev/null 2>&1
+    # threads=auto → 省略 --threads（引擎默认 0=auto；字面量 "auto" 非合法数值参数）
+    if [ "$threads" = "auto" ]; then
+        /usr/bin/time -f "%e %M" -o "$OUT/.time" \
+            "$BINARY" run --model "$model" --orientation in --rts "$rts" --data "$csv" \
+            --format csv -o "$out_dir" >/dev/null 2>&1 || rc=$?
+    else
+        /usr/bin/time -f "%e %M" -o "$OUT/.time" \
+            "$BINARY" run --model "$model" --orientation in --rts "$rts" --data "$csv" \
+            --threads "$threads" --format csv -o "$out_dir" >/dev/null 2>&1 || rc=$?
+    fi
     read -r wall rss < "$OUT/.time"
     rm -rf "$out_dir"
+    if [ "$rc" -ne 0 ]; then
+        echo -e "${label}\t${threads}\tFAILED(rc=$rc)\t${rss}" >> "$OUT/raw.tsv"
+        return 0
+    fi
     echo -e "${label}\t${threads}\t${wall}\t${rss}" >> "$OUT/raw.tsv"
 }
 
