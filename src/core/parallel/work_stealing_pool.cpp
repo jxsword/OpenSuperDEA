@@ -62,17 +62,20 @@ class WorkStealingPool
         }
     }
 
-    /** @brief 提交一个任务（轮转分配到本地队列，唤醒一个 worker）。 */
+    /** @brief 提交一个任务（先计数后入队，唤醒一个 worker）。 */
     void submit(std::function<void()> task)
     {
         const std::size_t id = next_queue.fetch_add(1, std::memory_order_relaxed) % queues.size();
         {
-            std::scoped_lock queue_lock(queue_mutexes[id]);
-            queues[id].push_back(std::move(task));
-        }
-        {
+            // 先 ++queued 再入队：worker 只可能取到已计数任务——若反过来，
+            // 「入队后、计数前」被取走并扣减会使 wait_idle 提前满足（逻辑竞争，
+            // 主线程在任务仍执行时读结果 → 结果随线程数/调度混乱）
             std::scoped_lock wake_lock(wake_mutex);
             ++queued_count;
+        }
+        {
+            std::scoped_lock queue_lock(queue_mutexes[id]);
+            queues[id].push_back(std::move(task));
         }
         wake_cv.notify_one();
     }

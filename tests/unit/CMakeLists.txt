@@ -35,6 +35,7 @@ target_link_libraries(opensuperdea_unit_tests_m2 PRIVATE
 # M3 性质套件（PR-09 并行/串行逐值一致，04 册 §4 实现约定路径）
 add_executable(opensuperdea_unit_tests_m3
     m3/property_test.cpp
+    m3/session_test.cpp
 )
 
 target_link_libraries(opensuperdea_unit_tests_m3 PRIVATE
