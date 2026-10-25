@@ -34,6 +34,17 @@ constexpr double K_LAMBDA_ZERO = 1e-9;
 constexpr double K_UNIT_TOLERANCE = 1e-9;
 
 /**
+ * @brief 二阶段松弛变量的下界（F-001 修复）。
+ * @details 一阶段单纯形在 HiGHS primal 可行容差（默认 1e-7）内终止，最优解对约束的
+ *          违反量可达容差量级；二阶段将不等式改为严格等式后，该违反量使 presolve
+ *          判定不可行（规模越大触发概率越高）。将松弛变量下界从 0 定向放宽到
+ *          −K_STAGE2_SLACK_FLOOR 同量级：违反量被松弛吸收，二阶段可行性由
+ *          「一阶段最优解 + 微负松弛」 witness 保证；最优目标与效率值不受影响，
+ *          松弛/投影的数值影响 ≤ 1e-7（在 P-010 对拍阈值 1e-6 内）。
+ */
+constexpr double K_STAGE2_SLACK_FLOOR = -1e-7;
+
+/**
  * @brief RTS 截距约束行（VRS: Σλ=1；NIRS: Σλ≤1；NDRS: Σλ≥1；CRS: 无）。
  * @param rts 规模报酬假定
  * @param lambda_offset λ 变量在问题中的起始列
@@ -320,7 +331,20 @@ result::DmuResult RadialEnvelopeModel::assemble_result(const SolveContext &conte
     stage2.column_lower_bounds.assign(stage2.variable_count, 0.0);
     stage2.column_upper_bounds.assign(stage2.variable_count, POSITIVE_INFINITY);
 
-    const SolveOutcome stage2_outcome = opensuperdea::adapters::solve_lp(stage2);
+    // F-001：一阶段单纯形在 HiGHS primal 容差（1e-7）内终止，最优解对约束的违反量
+    // 可达容差量级，严格等式二阶段会被 presolve 判不可行（规模越大概率越高）。
+    // 回退策略：首次严格求解（小规模保持精确收敛）；仅失败时将松弛段下界定向放宽到
+    // K_STAGE2_SLACK_FLOOR 重解一次（违反量被松弛吸收，witness = 一阶段最优解）。
+    // 效率值（一阶段）不受影响；回退路径松弛/投影偏差 ≤ 1e-7，在 P-010 阈值 1e-6 内。
+    SolveOutcome stage2_outcome = opensuperdea::adapters::solve_lp(stage2);
+    if (stage2_outcome.status != SolveStatus::OPTIMAL)
+    {
+        for (std::size_t i = 0; i < m + s; ++i)
+        {
+            stage2.column_lower_bounds[slack_in_offset + i] = K_STAGE2_SLACK_FLOOR;
+        }
+        stage2_outcome = opensuperdea::adapters::solve_lp(stage2);
+    }
     if (stage2_outcome.status != SolveStatus::OPTIMAL)
     {
         // 一阶段最优解可行 ⇒ 二阶段必可行；到不了这里属求解器异常
@@ -340,11 +364,12 @@ result::DmuResult RadialEnvelopeModel::assemble_result(const SolveContext &conte
     out.output_slacks.resize(s);
     for (std::size_t i = 0; i < m; ++i)
     {
-        out.input_slacks[i] = solution[slack_in_offset + i];
+        // 下界放宽后松弛可为容差级微负（F-001），输出按非负语义钳制
+        out.input_slacks[i] = std::max(0.0, solution[slack_in_offset + i]);
     }
     for (std::size_t r = 0; r < s; ++r)
     {
-        out.output_slacks[r] = solution[slack_out_offset + r];
+        out.output_slacks[r] = std::max(0.0, solution[slack_out_offset + r]);
     }
 
     // 投影（FR-OUT-002）：x* = θ*x0 − s⁻（投入）/ x0 − s⁻；y* = y0 + s⁺（投入）/ φ*y0 + s⁺

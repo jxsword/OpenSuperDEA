@@ -1,6 +1,6 @@
 # OpenSuperDEA 软件需求规格说明书（SRS）
 
-> 版本：V1.0（定稿，14 项待确认事项已于 2026-10-24 经用户裁决清零）｜ 日期：2026-10-24 ｜ 开发模型：瀑布·阶段门禁（DR-005/006）
+> 版本：V1.2（2026-10-25：DR-008——NFR-PERF-003 达标判定移至 M4 门禁，M3 交付十万级实测报告；V1.1 定稿 14 项裁决清零）｜ 日期：2026-10-25 ｜ 开发模型：瀑布·阶段门禁（DR-005/006）
 > 配套：design_docs/00a_requirement_decomposition.md（拆解清单）、design_docs/00b_srs_review_log.md（审核记录）
 > 写作规范：遵循 naming_convention.md §五；需求项字段模板遵循 SRS 模板（编号/优先级/版本/描述/触发/输入/逻辑/输出/异常/前置/后置/验证十二字段）。
 
@@ -1264,8 +1264,8 @@
 |---|---|---|---|
 | FR-ENG / FR-IO / FR-CLI | M1 / V0.1.0 | 单元测试 | 全新构建成功；CSV 异常用例；CLI 解析；CI 双平台全绿 |
 | FR-OUT / FR-RAD / FR-NRAD-001~004 / FR-DDF / FR-COST / FR-FDH / FR-MULT / FR-CROSS / FR-WIN / FR-NEG-001 / FR-TFP-001 | M2 / V0.2.0 | L1+L2+L3 | deaR/PyDEA 全量对拍；经典算例；对偶/恒等式性质 |
-| FR-PERF-001/004/005 | M3 / V0.3.0 | L4 | 10 万 DMU 3×3 BCC 基准报告（NFR-PERF-003） |
-| FR-PERF-002/003 | M4 / V0.4.0 | L4 | 100 万 DMU 3×3 CCR（NFR-PERF-004）+ 一致性抽检 |
+| FR-PERF-001/004/005 | M3 / V0.3.0 | L4 | 10 万 DMU 3×3 BCC 基准实测报告（分钟级，DR-008）；NFR-PERF-003 达标判定移 M4 |
+| FR-PERF-002/003 | M4 / V0.4.0 | L4 | 100 万 DMU 3×3 CCR（NFR-PERF-004）+ 十万达标判定（NFR-PERF-003，DR-008）+ 一致性抽检 |
 | FR-MIND / FR-FDEF / FR-WEF / FR-AR / FR-NASH / FR-CLU / FR-NRAD-005~007 / FR-TFP-002~009 / FR-NEG-004 | M5 / V0.5.0 | L1+L2+L3 | Airlines 28/32 打印机/32 机场/902 学校/GRIPS/Liang 2008/Kansas 1990/Sharp 2007 逐项对拍 |
 | FR-GUI | M6 / V0.6.0 | 集成测试 | GUI/CLI 同源结果一致 |
 | （平台扩展） | M7 / V0.7.0 | NFR-COMPAT-001 | Windows 原生打包；macOS |

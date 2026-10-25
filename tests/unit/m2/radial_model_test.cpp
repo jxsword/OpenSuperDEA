@@ -11,6 +11,8 @@
 #include <cmath>
 #include <string>
 
+#include "adapters/highs_adapter.h"
+#include "core/radial/radial_envelope_model.h"
 #include "dataset_fixtures.h"
 
 namespace
@@ -224,6 +226,46 @@ TEST(RadialFamily, FR_RAD_005_SuperEfficiencyVrsInfeasibleMarked)
     config.version = "test";
     const ModelResult single = opensuperdea::registry::run_model("ccr", data, options, config);
     EXPECT_EQ(single.dmu_results[0].status, DmuStatus::INFEASIBLE);
+}
+
+TEST(RadialFamily, F001StageTwoFallbackOnOverOptimalTheta)
+{
+    // F-001 回归：一阶段单纯形在 HiGHS primal 容差（1e-7）内终止时，报告的测度可比
+    // 严格可行最优更小（过优），严格等式二阶段随之不可行（大规模高概率触发）。
+    // 修复为回退式：失败后将松弛下界放宽到 −1e-7 重解。此处对有效顶点 C（θ*=1、
+    // 最优解处松弛为 0）注入约束空间量级的过优（θ − 2e-8，乘投入规模 4 后缺口
+    // 8e-8 < 放宽量 1e-7）：不抛异常、测度透传、松弛按非负语义钳制。
+    using opensuperdea::adapters::solve_lp;
+    using opensuperdea::radial::RadialEnvelopeModel;
+    using opensuperdea::registry::SolveContext;
+    using opensuperdea::solver::SolveStatus;
+
+    const Dataset data = test_fixtures::make_toy_cross();
+    SolveContext context;
+    context.data = &data;
+    context.dmu_index = 2; // C：CCR 强有效顶点
+    context.reference_indices = {0, 1, 2, 3};
+    context.options.orientation = Orientation::INPUT;
+    context.options.rts = Rts::CRS;
+
+    RadialEnvelopeModel model;
+    const auto stage1 = model.build_problem(context);
+    const auto outcome1 = solve_lp(stage1);
+    ASSERT_EQ(outcome1.status, SolveStatus::OPTIMAL);
+    ASSERT_NEAR(outcome1.objective_value, 1.0, 1e-9);
+
+    auto over_optimal = outcome1;
+    over_optimal.objective_value -= 2e-8; // 容差级过优（HiGHS 容差内可发生的量级）
+    const auto result = model.assemble_result(context, over_optimal);
+    EXPECT_NEAR(result.score, 1.0 - 2e-8, 1e-12);
+    for (const double slack : result.input_slacks)
+    {
+        EXPECT_GE(slack, 0.0);
+    }
+    for (const double slack : result.output_slacks)
+    {
+        EXPECT_GE(slack, 0.0);
+    }
 }
 
 TEST(RadialFamily, FR_RAD_004_ScaleEfficiencyScoreIsTeWithAnnotations)

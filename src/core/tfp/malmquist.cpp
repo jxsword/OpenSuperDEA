@@ -5,6 +5,7 @@
 #include "malmquist.h"
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <iomanip>
@@ -12,6 +13,7 @@
 #include <utility>
 
 #include "adapters/highs_adapter.h"
+#include "core/parallel/work_stealing_pool.h"
 #include "core/registry/engine_error.h"
 #include "core/solver/lp_problem.h"
 
@@ -164,25 +166,39 @@ result::ModelResult run_malmquist(const dataset::PanelData &panel, const SolveOp
             out.meta.warnings.push_back(std::move(warning));
         }
 
-        for (const auto &name : common)
+        // 两阶段（FR-PERF-001，07 册 §2.3）：先并行计算每 DMU 对的 4 次距离（重头，
+        // DMU 对间独立），再按 common 原序串行组装——跳过/warnings/行序与串行完全一致
+        const std::size_t common_count = common.size();
+        std::vector<std::pair<std::size_t, std::size_t>> row_indices(common_count);
+        for (std::size_t c = 0; c < common_count; ++c)
         {
-            const auto index_t = static_cast<Eigen::Index>(
+            const auto &name = common[c];
+            row_indices[c].first = static_cast<std::size_t>(
                 std::ranges::find(data_t.dmu_names, name) - data_t.dmu_names.begin());
-            const auto index_t1 = static_cast<Eigen::Index>(
+            row_indices[c].second = static_cast<std::size_t>(
                 std::ranges::find(data_t1.dmu_names, name) - data_t1.dmu_names.begin());
-            const Eigen::RowVectorXd x_t = data_t.inputs.row(index_t);
-            const Eigen::RowVectorXd y_t = data_t.outputs.row(index_t);
-            const Eigen::RowVectorXd x_t1 = data_t1.inputs.row(index_t1);
-            const Eigen::RowVectorXd y_t1 = data_t1.outputs.row(index_t1);
+        }
+        std::vector<std::array<double, 4>> distances(common_count);
+        parallel::parallel_for(common_count, config.thread_count, [&](std::size_t c) {
+            const Eigen::RowVectorXd x_t =
+                data_t.inputs.row(static_cast<Eigen::Index>(row_indices[c].first));
+            const Eigen::RowVectorXd y_t =
+                data_t.outputs.row(static_cast<Eigen::Index>(row_indices[c].first));
+            const Eigen::RowVectorXd x_t1 =
+                data_t1.inputs.row(static_cast<Eigen::Index>(row_indices[c].second));
+            const Eigen::RowVectorXd y_t1 =
+                data_t1.outputs.row(static_cast<Eigen::Index>(row_indices[c].second));
+            distances[c] = {
+                distance_value(data_t.inputs, data_t.outputs, x_t, y_t, options.rts),
+                distance_value(data_t.inputs, data_t.outputs, x_t1, y_t1, options.rts),
+                distance_value(data_t1.inputs, data_t1.outputs, x_t, y_t, options.rts),
+                distance_value(data_t1.inputs, data_t1.outputs, x_t1, y_t1, options.rts)};
+        });
 
-            const double d_t_t =
-                distance_value(data_t.inputs, data_t.outputs, x_t, y_t, options.rts);
-            const double d_t_t1 =
-                distance_value(data_t.inputs, data_t.outputs, x_t1, y_t1, options.rts);
-            const double d_t1_t =
-                distance_value(data_t1.inputs, data_t1.outputs, x_t, y_t, options.rts);
-            const double d_t1_t1 =
-                distance_value(data_t1.inputs, data_t1.outputs, x_t1, y_t1, options.rts);
+        for (std::size_t c = 0; c < common_count; ++c)
+        {
+            const auto &name = common[c];
+            const auto &[d_t_t, d_t_t1, d_t1_t, d_t1_t1] = distances[c];
             if (std::isnan(d_t_t) || std::isnan(d_t_t1) || std::isnan(d_t1_t) ||
                 std::isnan(d_t1_t1))
             {
