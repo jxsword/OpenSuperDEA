@@ -82,12 +82,21 @@ PRECHECK_EOF
             case "$suite" in
             ctest)
                 cat <<'S_CTEST'
-echo "--- [ctest] Release 构建 + ctest -j2 ---" | tee -a $LOG
+echo "--- [ctest] step1: vcpkg 依赖安装（限并发 1 防内存尖峰，10-40 分钟）---" | tee -a $LOG
 export VCPKG_FORCE_SYSTEM_BINARIES=1
-/data/vcpkg/vcpkg install --x-manifest-root=. --x-install-root=$REMOTE_ROOT/vcpkg_installed --triplet x64-linux >> $LOG 2>&1 || { echo overall=1 > $REMOTE_RUNS/LATEST_EXIT; exit 1; }
-cmake -B $REMOTE_ROOT/build -S . -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=/data/vcpkg/scripts/buildsystems/vcpkg.cmake -G Ninja >> $LOG 2>&1
+export VCPKG_MAX_CONCURRENCY=1
+/data/home-sf/vcpkg/vcpkg install --x-manifest-root=. --x-install-root=$REMOTE_ROOT/vcpkg_installed --triplet x64-linux >> $LOG 2>&1
+echo "step1 exit=$? $(date +%H:%M:%S)" | tee -a $LOG
+[ -d $REMOTE_ROOT/vcpkg_installed/x64-linux/include ] || { echo overall=1 > $REMOTE_RUNS/LATEST_EXIT; exit 1; }
+echo "--- [ctest] step2: cmake configure ---" | tee -a $LOG
+cmake -B $REMOTE_ROOT/build -S . -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=/data/home-sf/vcpkg/scripts/buildsystems/vcpkg.cmake -G Ninja >> $LOG 2>&1
+echo "step2 exit=$?" | tee -a $LOG
+echo "--- [ctest] step3: build -j2 ---" | tee -a $LOG
 cmake --build $REMOTE_ROOT/build -j2 >> $LOG 2>&1
+echo "step3 exit=$?" | tee -a $LOG
+echo "--- [ctest] step4: ctest ---" | tee -a $LOG
 ctest --test-dir $REMOTE_ROOT/build -j2 --output-on-failure | tee -a $LOG
+echo "step4 exit=$?" | tee -a $LOG
 S_CTEST
                 ;;
             parity)
@@ -100,7 +109,7 @@ S_PARITY
             coverage)
                 cat <<'S_COV'
 echo "--- [coverage] build-coverage + gcovr ---" | tee -a $LOG
-cmake -B $REMOTE_ROOT/build-coverage -S . -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="--coverage" -DCMAKE_EXE_LINKER_FLAGS="--coverage" -DCMAKE_TOOLCHAIN_FILE=/data/vcpkg/scripts/buildsystems/vcpkg.cmake -G Ninja >> $LOG 2>&1
+cmake -B $REMOTE_ROOT/build-coverage -S . -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="--coverage" -DCMAKE_EXE_LINKER_FLAGS="--coverage" -DCMAKE_TOOLCHAIN_FILE=/data/home-sf/vcpkg/scripts/buildsystems/vcpkg.cmake -G Ninja >> $LOG 2>&1
 cmake --build $REMOTE_ROOT/build-coverage -j2 >> $LOG 2>&1
 ctest --test-dir $REMOTE_ROOT/build-coverage >> $LOG 2>&1
 GCOV=$(command -v gcov-13 || command -v gcov)
