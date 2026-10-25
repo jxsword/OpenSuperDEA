@@ -8,6 +8,7 @@
 #include <chrono>
 #include <stdexcept>
 
+#include "core/parallel/work_stealing_pool.h"
 #include "core/registry/engine_error.h"
 #include "core/registry/model_registry.h"
 
@@ -78,25 +79,30 @@ result::ModelResult run_window_analysis(const dataset::PanelData &panel, std::si
     out.meta.input_count = panel.sections.begin()->second.input_count();
     out.meta.output_count = panel.sections.begin()->second.output_count();
 
-    // 滑窗：起点 0..T-w（首尾期窗口数按定义减少）
+    // 滑窗：起点 0..T-w（首尾期窗口数按定义减少）；窗口间串行（数量少）、
+    // 窗口内单元相互独立 → parallel_for（FR-PERF-001，07 册 §2.3）；
+    // dmu_index 显式按窗口起点偏移计算（弃累计 size 的隐式顺序）
     for (std::size_t start = 0; start + window_width <= panel.periods.size(); ++start)
     {
         const dataset::Dataset merged = merge_window(panel, start, window_width);
-        for (std::size_t unit = 0; unit < merged.dmu_count(); ++unit)
-        {
-            registry::SolveContext context;
-            context.data = &merged;
-            context.dmu_index = unit;
-            for (std::size_t j = 0; j < merged.dmu_count(); ++j)
-            {
-                context.reference_indices.push_back(j); // 窗口内全体单元构成参考集
-            }
-            context.options = options;
-            result::DmuResult dmu = descriptor->solve(context);
-            dmu.dmu_index = out.dmu_results.size();
-            dmu.annotations.emplace("window_start", panel.periods[start]);
-            out.dmu_results.push_back(std::move(dmu));
-        }
+        const std::size_t base_index = out.dmu_results.size();
+        out.dmu_results.resize(base_index + merged.dmu_count());
+        parallel::parallel_for(
+            merged.dmu_count(), config.thread_count,
+            [&merged, &panel, &out, &options, descriptor, base_index, start](std::size_t unit) {
+                registry::SolveContext context;
+                context.data = &merged;
+                context.dmu_index = unit;
+                for (std::size_t j = 0; j < merged.dmu_count(); ++j)
+                {
+                    context.reference_indices.push_back(j); // 窗口内全体单元构成参考集
+                }
+                context.options = options;
+                result::DmuResult dmu = descriptor->solve(context);
+                dmu.dmu_index = base_index + unit;
+                dmu.annotations.emplace("window_start", panel.periods[start]);
+                out.dmu_results[base_index + unit] = std::move(dmu);
+            });
         // 行名以合并期名记录（导出层用 annotations 重建 "dmu@period"）
     }
     // 行名：dmu_results 顺序与各窗口合并序一致；导出需行名 → 记入 annotations

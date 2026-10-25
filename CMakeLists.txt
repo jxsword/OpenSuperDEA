@@ -35,6 +35,7 @@ endif()
 find_package(Eigen3 CONFIG REQUIRED)
 find_package(HIGHS CONFIG REQUIRED)
 find_package(CLI11 CONFIG REQUIRED)
+find_package(Threads REQUIRED)
 
 # GUI 骨架已移入 tmp/gui_skeleton/（CLI 先行规划，2026-10-24）。
 # M6 恢复 GUI 时引入以下配置：

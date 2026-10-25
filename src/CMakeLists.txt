@@ -13,6 +13,7 @@ add_library(opensuperdea_core STATIC
     core/nonradial/fdh_model.cpp
     core/nonradial/price_models.cpp
     core/nonradial/sbm_model.cpp
+    core/parallel/work_stealing_pool.cpp
     core/radial/multiplier_model.cpp
     core/radial/radial_envelope_model.cpp
     core/radial/scale_efficiency_model.cpp
@@ -30,8 +31,9 @@ add_library(opensuperdea_core STATIC
 # 引擎头以 src/ 为根（#include "core/..." / "adapters/..."），对测试与未来 GUI 复用开放
 target_include_directories(opensuperdea_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-# Eigen 随 core 公共头暴露（数据矩阵底座）；HiGHS 仅适配层 .cpp 接触，不外泄（DR-004）
-target_link_libraries(opensuperdea_core PUBLIC Eigen3::Eigen)
+# Eigen 随 core 公共头暴露（数据矩阵底座）；HiGHS 仅适配层 .cpp 接触，不外泄（DR-004）；
+# Threads 为 std::jthread 支撑（FR-PERF-001 并行框架，GCC 需 -pthread，MSVC 无副作用）
+target_link_libraries(opensuperdea_core PUBLIC Eigen3::Eigen Threads::Threads)
 target_link_libraries(opensuperdea_core PRIVATE highs::highs CLI11::CLI11)
 
 add_executable(opensuperdea main.cpp)

@@ -22,6 +22,7 @@ struct RunConfig
     bool super_efficiency = false; // 参考集切为 exclude_self（06 册 §3.2）
     std::string data_sha1;         // 数据文件指纹（02 册 §4.2；可空）
     std::string version;           // 引擎版本回显（FR-CLI-001 同源）
+    unsigned int thread_count = 0; // 并行度（FR-PERF-001，07 册 §2.5）：0=自动；1=串行退化
 };
 
 /**

@@ -32,6 +32,16 @@ target_link_libraries(opensuperdea_unit_tests_m2 PRIVATE
     GTest::gtest_main
 )
 
+# M3 性质套件（PR-09 并行/串行逐值一致，04 册 §4 实现约定路径）
+add_executable(opensuperdea_unit_tests_m3
+    m3/property_test.cpp
+)
+
+target_link_libraries(opensuperdea_unit_tests_m3 PRIVATE
+    opensuperdea_core
+    GTest::gtest_main
+)
+
 # 黄金算例路径注入（测试经 OPENSUPERDEA_SOURCE_DIR 定位 tests/golden/）
 target_compile_definitions(opensuperdea_unit_tests PRIVATE
     OPENSUPERDEA_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
@@ -39,7 +49,11 @@ target_compile_definitions(opensuperdea_unit_tests PRIVATE
 target_compile_definitions(opensuperdea_unit_tests_m2 PRIVATE
     OPENSUPERDEA_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
 )
+target_compile_definitions(opensuperdea_unit_tests_m3 PRIVATE
+    OPENSUPERDEA_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+)
 
 include(GoogleTest)
 gtest_discover_tests(opensuperdea_unit_tests PROPERTIES LABELS "unit;m1")
 gtest_discover_tests(opensuperdea_unit_tests_m2 PROPERTIES LABELS "unit;m2")
+gtest_discover_tests(opensuperdea_unit_tests_m3 PROPERTIES LABELS "unit;m3")
