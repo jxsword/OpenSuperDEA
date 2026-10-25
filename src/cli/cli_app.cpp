@@ -39,7 +39,7 @@ namespace opensuperdea::cli
 {
 namespace
 {
-constexpr const char *VERSION_TEXT = "0.2.0";
+constexpr const char *VERSION_TEXT = "0.3.0";
 constexpr const char *PROGRAM_NAME = "opensuperdea";
 
 /** @brief 输出一条校验错误（五元组 → 单行，NFR-USAB-001）。 */
