@@ -9,7 +9,7 @@
 - **目标**：用 AI Agent（Zcode）+ C++ 全量实现商业软件 MaxDEA X 全部功能，项目代号 OpenSuperDEA。
 - **覆盖范围**：常规模型族 + 10 项独有算法（在线平台与开源工具均未实现）+ 万级 DMU 极速求解。
 - **形态**：CLI 先行（M1-M5）→ GUI 后置（M6，Qt6）；支持 Ubuntu（WSL）/ Windows，macOS 后期扩展。
-- **当前状态**：M0 预研完成；需求工程阶段完成（SRS V1.0 + 设计分册，见 §8.0）；**M1 工程底座完成并验收（2026-10-24，v0.1.0，三段式 CI 全绿）**；M2 常规引擎待启动（C++20 升级评估已出待确认）。
+- **当前状态**：M0 预研完成；需求工程完成（SRS V1.1）；M1 完成验收（v0.1.0）；**M2 常规引擎开发完成（2026-10-25，release/v0.2.0 待验收：ctest 102/102 + L1 对拍 68/68 + 覆盖率 85%，测试报告 design_docs/reports/m2_test_report.md）**；M3 待启动。
 
 ## 2. 技术栈决策（已论证，勿推翻）
 
@@ -121,6 +121,7 @@ MinDS、FDEF、博弈交叉效率（Nash）、EBM、HMB、Cluster 8 基准、AR/
 0. **需求工程阶段完成（2026-10-24，DR-005/006）**：SRS V1.0 定稿于 design_docs/00_srs.md（23 模块/116 FR/21 NFR）；设计分册 01-05 就绪。M2+ 算法设计册（06+）启动时产出。
 0.5 **M1 完成（2026-10-24，v0.1.0）**：六任务验收通过；Git Flow 实跑（3 feature 分支 no-ff 合入）；33 单元测试全绿；三段式 CI 全绿（WSL / Actions Linux / Actions Windows，run 40107184884）；远程 github.com/jxsword/OpenSuperDEA 已建 main+develop+v0.1.0。CI 修复沉淀：workflow env 不可引用 runner 系统变量（用官方固定路径）、PowerShell 调用 bat 需 `& "${env:VAR}\..."`、MSVC 需 /W4 /utf-8（中文注释必需）。测试报告 design_docs/reports/m1_test_report.md。
 0.7 **C++20 基线 + M2 设计册完成（2026-10-25，DR-007）**：CMAKE_CXX_STANDARD 20（指定初始化器/ranges/starts_with 已现代化，零告警）；M2 实现蓝本 design_docs/06_m2_engine_design.md 已确认。**M2 新会话启动提示词：tmp/zcode_2_m2.md（新会话首条消息粘贴该文件全文，或指示 zcode 显式读取该路径）。**
+0.8 **M2 常规引擎完成（2026-10-25）**：三分支 Git Flow 实跑（m2-registry-radial / m2-nonradial-ddf / m2-cross-window-tfp，no-ff 合入 develop）；交付：C++20 模型注册表（concept+工厂）+ 参考集选择器 + 径向族/乘子/规模效率/SBM 族/超效率/DDF 五方向/FDH(MILP)/成本收益利润/加权加性族（ADD/归一化/RAM/BAM/wADD/DSBM）/ERM/交叉效率（DG-I/II/M3/虚拟 DMU）/窗口分析/相邻 Malmquist；对拍 harness（tests/parity/，68 用例，双阈值 P-010）+ L2 黄金算例（ccr_classic/fare1994_panel）+ L3 性质套件（PR-05/PR-06 等）+ 覆盖率门禁 85%（P-009 达标）。设计偏差与口径差异记录于 design_docs/reports/m2_test_report.md §3（含 06 册 §6 成本效率公式笔误修正）。release/v0.2.0 已冻结版本号（CMake project VERSION + VERSION_TEXT = 0.2.0）。
 1. 项目根已备好：AGENTS.md、naming_convention.md、.clang-format/.clang-tidy、CMakeLists.txt、CLI 占位骨架（src/main.cpp，已构建验证通过）；Qt6 GUI 骨架已移入 tmp/gui_skeleton/（M6 恢复）。
 2. M1 内容：引入 vcpkg（manifest）+ Eigen + HiGHS；CLI 框架（CLI11）；数据 IO（CSV）；三段式 CI（.github/workflows）；把 src/adapters/ 填充为求解器/数据适配层。
 3. 依赖现状：当前无外部依赖（CLI 占位）；Eigen/HiGHS/CLI11 未安装（vcpkg 引入）；Qt6 为 M6 恢复引入。

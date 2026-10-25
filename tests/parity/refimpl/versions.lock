@@ -1,0 +1,25 @@
+# 对拍参考实现版本锁定（04 册 §2：工具版本固定记录，升级必须全量回归）
+# 固化时间: 2026-10-25 ｜ 固化环境: WSL ubuntu2604（docs/environment_setup.md）
+
+[R]
+version = 4.5.2
+
+[deaR]
+version = 1.5.4
+usage = 径向族/乘子/超效率/SBM/加性/DDF/FDH/RDM/交叉效率（M2 对拍主力）
+
+[productivity]
+version = 1.1.2
+usage = 相邻 Malmquist（Färe 1994 惯例仲裁实现）
+
+[DEAPack]
+version = 2.0.1
+usage = M5 起（Nash/AR-Cone/EBM/HMB）
+
+[PyDEA]
+version = git@~/dea_tools/pyDEA
+usage = M5 起（AR/基础模型）
+
+[product]
+version = 0.1.0
+binary = build/src/opensuperdea

@@ -3,10 +3,28 @@
 add_library(opensuperdea_core STATIC
     adapters/highs_adapter.cpp
     cli/cli_app.cpp
+    core/cross/cross_efficiency.cpp
     core/dataset/csv_parser.cpp
     core/dataset/dataset.cpp
     core/dataset/dataset_builder.cpp
     core/dataset/validator.cpp
+    core/distance/ddf_model.cpp
+    core/nonradial/additive_models.cpp
+    core/nonradial/fdh_model.cpp
+    core/nonradial/price_models.cpp
+    core/nonradial/sbm_model.cpp
+    core/radial/multiplier_model.cpp
+    core/radial/radial_envelope_model.cpp
+    core/radial/scale_efficiency_model.cpp
+    core/registry/model_registry.cpp
+    core/registry/model_runner.cpp
+    core/registry/reference_set.cpp
+    core/registry/solve_options.cpp
+    core/result/dmu_result.cpp
+    core/result/result_exporter.cpp
+    core/tfp/malmquist.cpp
+    core/util/sha1.cpp
+    core/window/window_analysis.cpp
 )
 
 # 引擎头以 src/ 为根（#include "core/..." / "adapters/..."），对测试与未来 GUI 复用开放

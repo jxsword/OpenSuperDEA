@@ -1,0 +1,5 @@
+dmu,score,status
+A,0.5,inefficient
+B,0.75,inefficient
+C,1,efficient
+D,0.9333333333,inefficient

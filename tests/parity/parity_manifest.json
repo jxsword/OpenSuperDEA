@@ -1,0 +1,1458 @@
+{
+  "schema": "opensuperdea-parity-manifest/1",
+  "notes": "M2 分支 1 最小批：径向族 8 组合（toy_cross）。列映射 product→reference；容差覆写缺省取顶层双阈值（P-010）。分支 2/3 增量追加 SBM/加性/DDF/交叉/窗口/Malmquist 批。",
+  "cli": {
+    "binary": "build/src/opensuperdea",
+    "format": "json"
+  },
+  "tolerance": {
+    "abs": 1e-06,
+    "rel": 1e-09
+  },
+  "cases": [
+    {
+      "name": "toy_cross_ccr_io_crs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "ccr",
+        "orientation": "in",
+        "rts": "crs"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_radial.R",
+        "args": [
+          "crs",
+          "io"
+        ]
+      },
+      "compare": {
+        "score": "efficiency"
+      }
+    },
+    {
+      "name": "toy_cross_ccr_io_vrs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "ccr",
+        "orientation": "in",
+        "rts": "vrs"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_radial.R",
+        "args": [
+          "vrs",
+          "io"
+        ]
+      },
+      "compare": {
+        "score": "efficiency"
+      }
+    },
+    {
+      "name": "toy_cross_ccr_io_nirs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "ccr",
+        "orientation": "in",
+        "rts": "nirs"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_radial.R",
+        "args": [
+          "nirs",
+          "io"
+        ]
+      },
+      "compare": {
+        "score": "efficiency"
+      }
+    },
+    {
+      "name": "toy_cross_ccr_io_ndrs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "ccr",
+        "orientation": "in",
+        "rts": "ndrs"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_radial.R",
+        "args": [
+          "ndrs",
+          "io"
+        ]
+      },
+      "compare": {
+        "score": "efficiency"
+      }
+    },
+    {
+      "name": "toy_cross_ccr_oo_crs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "ccr",
+        "orientation": "out",
+        "rts": "crs"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_radial.R",
+        "args": [
+          "crs",
+          "oo"
+        ]
+      },
+      "compare": {
+        "score": {
+          "column": "efficiency",
+          "transform": "reciprocal",
+          "reason": "deaR 输出导向报告原始 phi（≥1），产品按 MaxDEA 口径归一为 1/phi（04 册 §2 差异显式标注）"
+        }
+      }
+    },
+    {
+      "name": "toy_cross_ccr_oo_vrs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "ccr",
+        "orientation": "out",
+        "rts": "vrs"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_radial.R",
+        "args": [
+          "vrs",
+          "oo"
+        ]
+      },
+      "compare": {
+        "score": {
+          "column": "efficiency",
+          "transform": "reciprocal",
+          "reason": "deaR 输出导向报告原始 phi（≥1），产品按 MaxDEA 口径归一为 1/phi（04 册 §2 差异显式标注）"
+        }
+      }
+    },
+    {
+      "name": "toy_cross_ccr_oo_nirs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "ccr",
+        "orientation": "out",
+        "rts": "nirs"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_radial.R",
+        "args": [
+          "nirs",
+          "oo"
+        ]
+      },
+      "compare": {
+        "score": {
+          "column": "efficiency",
+          "transform": "reciprocal",
+          "reason": "deaR 输出导向报告原始 phi（≥1），产品按 MaxDEA 口径归一为 1/phi（04 册 §2 差异显式标注）"
+        }
+      }
+    },
+    {
+      "name": "toy_cross_ccr_oo_ndrs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "ccr",
+        "orientation": "out",
+        "rts": "ndrs"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_radial.R",
+        "args": [
+          "ndrs",
+          "oo"
+        ]
+      },
+      "compare": {
+        "score": {
+          "column": "efficiency",
+          "transform": "reciprocal",
+          "reason": "deaR 输出导向报告原始 phi（≥1），产品按 MaxDEA 口径归一为 1/phi（04 册 §2 差异显式标注）"
+        }
+      }
+    },
+    {
+      "name": "toy_cross_ccr_super_in_crs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "ccr",
+        "orientation": "in",
+        "rts": "crs",
+        "super": true
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_supereff.R",
+        "args": [
+          "crs",
+          "io"
+        ]
+      },
+      "compare": {
+        "score": "efficiency"
+      }
+    },
+    {
+      "name": "toy_cross_ccr_super_out_crs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "ccr",
+        "orientation": "out",
+        "rts": "crs",
+        "super": true
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_supereff.R",
+        "args": [
+          "crs",
+          "oo"
+        ]
+      },
+      "compare": {
+        "score": {
+          "column": "efficiency",
+          "transform": "reciprocal",
+          "reason": "deaR 输出导向（含超效率）报告原始 phi，产品按 MaxDEA 口径归一为 1/phi（04 册 §2 差异显式标注）"
+        }
+      }
+    },
+    {
+      "name": "toy_cross_ccr_super_in_vrs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "ccr",
+        "orientation": "in",
+        "rts": "vrs",
+        "super": true
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_supereff.R",
+        "args": [
+          "vrs",
+          "io"
+        ]
+      },
+      "compare": {
+        "score": "efficiency"
+      }
+    },
+    {
+      "name": "toy_cross_ccr_super_out_vrs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "ccr",
+        "orientation": "out",
+        "rts": "vrs",
+        "super": true
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_supereff.R",
+        "args": [
+          "vrs",
+          "oo"
+        ]
+      },
+      "compare": {
+        "score": {
+          "column": "efficiency",
+          "transform": "reciprocal",
+          "reason": "deaR 输出导向（含超效率）报告原始 phi，产品按 MaxDEA 口径归一为 1/phi（04 册 §2 差异显式标注）"
+        }
+      }
+    },
+    {
+      "name": "toy_cross_multiplier_in_crs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "multiplier",
+        "orientation": "in",
+        "rts": "crs"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_multiplier.R",
+        "args": [
+          "crs",
+          "io"
+        ]
+      },
+      "compare": {
+        "score": "efficiency"
+      }
+    },
+    {
+      "name": "toy_cross_multiplier_out_crs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "multiplier",
+        "orientation": "out",
+        "rts": "crs"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_multiplier.R",
+        "args": [
+          "crs",
+          "oo"
+        ]
+      },
+      "compare": {
+        "score": {
+          "column": "efficiency",
+          "transform": "reciprocal",
+          "reason": "deaR 输出导向报告原始 phi，产品按 MaxDEA 口径归一为 1/phi（04 册 §2 差异显式标注）"
+        }
+      }
+    },
+    {
+      "name": "toy_cross_multiplier_in_vrs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "multiplier",
+        "orientation": "in",
+        "rts": "vrs"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_multiplier.R",
+        "args": [
+          "vrs",
+          "io"
+        ]
+      },
+      "compare": {
+        "score": "efficiency"
+      }
+    },
+    {
+      "name": "toy_cross_multiplier_out_vrs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "multiplier",
+        "orientation": "out",
+        "rts": "vrs"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_multiplier.R",
+        "args": [
+          "vrs",
+          "oo"
+        ]
+      },
+      "compare": {
+        "score": {
+          "column": "efficiency",
+          "transform": "reciprocal",
+          "reason": "deaR 输出导向报告原始 phi，产品按 MaxDEA 口径归一为 1/phi（04 册 §2 差异显式标注）"
+        }
+      }
+    },
+    {
+      "name": "toy_cross_sbm_non_crs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "sbm",
+        "orientation": "non",
+        "rts": "crs"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_sbm.R",
+        "args": [
+          "crs",
+          "no"
+        ]
+      },
+      "compare": {
+        "score": "efficiency"
+      }
+    },
+    {
+      "name": "toy_cross_sbm_in_crs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "sbm",
+        "orientation": "in",
+        "rts": "crs"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_sbm.R",
+        "args": [
+          "crs",
+          "io"
+        ]
+      },
+      "compare": {
+        "score": "efficiency"
+      }
+    },
+    {
+      "name": "toy_cross_sbm_out_crs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "sbm",
+        "orientation": "out",
+        "rts": "crs"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_sbm.R",
+        "args": [
+          "crs",
+          "oo"
+        ]
+      },
+      "compare": {
+        "score": "efficiency"
+      }
+    },
+    {
+      "name": "toy_cross_sbm_non_vrs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "sbm",
+        "orientation": "non",
+        "rts": "vrs"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_sbm.R",
+        "args": [
+          "vrs",
+          "no"
+        ]
+      },
+      "compare": {
+        "score": "efficiency"
+      }
+    },
+    {
+      "name": "toy_cross_sbm_in_vrs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "sbm",
+        "orientation": "in",
+        "rts": "vrs"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_sbm.R",
+        "args": [
+          "vrs",
+          "io"
+        ]
+      },
+      "compare": {
+        "score": "efficiency"
+      }
+    },
+    {
+      "name": "toy_cross_sbm_out_vrs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "sbm",
+        "orientation": "out",
+        "rts": "vrs"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_sbm.R",
+        "args": [
+          "vrs",
+          "oo"
+        ]
+      },
+      "compare": {
+        "score": "efficiency"
+      }
+    },
+    {
+      "name": "toy_cross_sbm_super_non",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "sbm",
+        "orientation": "non",
+        "rts": "crs",
+        "super": true
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_sbm.R",
+        "args": [
+          "crs",
+          "no",
+          "super"
+        ]
+      },
+      "compare": {
+        "score": "efficiency"
+      }
+    },
+    {
+      "name": "toy_cross_sbm_super_in",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "sbm",
+        "orientation": "in",
+        "rts": "crs",
+        "super": true
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_sbm.R",
+        "args": [
+          "crs",
+          "io",
+          "super"
+        ]
+      },
+      "compare": {
+        "score": "efficiency"
+      }
+    },
+    {
+      "name": "toy_cross_sbm_super_out",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "sbm",
+        "orientation": "out",
+        "rts": "crs",
+        "super": true
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_sbm.R",
+        "args": [
+          "crs",
+          "oo",
+          "super"
+        ]
+      },
+      "compare": {
+        "score": "efficiency"
+      }
+    },
+    {
+      "name": "toy_ddf_ddf_custom_in_crs",
+      "data": "../golden/toy_ddf/data.csv",
+      "product": {
+        "model": "ddf",
+        "orientation": "in",
+        "rts": "crs",
+        "direction": "custom"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_ddf.R",
+        "args": [
+          "crs",
+          "in",
+          "custom"
+        ]
+      },
+      "compare": {
+        "score": "beta"
+      }
+    },
+    {
+      "name": "toy_ddf_ddf_custom_out_crs",
+      "data": "../golden/toy_ddf/data.csv",
+      "product": {
+        "model": "ddf",
+        "orientation": "out",
+        "rts": "crs",
+        "direction": "custom"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_ddf.R",
+        "args": [
+          "crs",
+          "out",
+          "custom"
+        ]
+      },
+      "compare": {
+        "score": "beta"
+      }
+    },
+    {
+      "name": "toy_ddf_ddf_custom_non_crs",
+      "data": "../golden/toy_ddf/data.csv",
+      "product": {
+        "model": "ddf",
+        "orientation": "non",
+        "rts": "crs",
+        "direction": "custom"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_ddf.R",
+        "args": [
+          "crs",
+          "non",
+          "custom"
+        ]
+      },
+      "compare": {
+        "score": "beta"
+      }
+    },
+    {
+      "name": "toy_ddf_ddf_custom_in_vrs",
+      "data": "../golden/toy_ddf/data.csv",
+      "product": {
+        "model": "ddf",
+        "orientation": "in",
+        "rts": "vrs",
+        "direction": "custom"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_ddf.R",
+        "args": [
+          "vrs",
+          "in",
+          "custom"
+        ]
+      },
+      "compare": {
+        "score": "beta"
+      }
+    },
+    {
+      "name": "toy_ddf_ddf_custom_out_vrs",
+      "data": "../golden/toy_ddf/data.csv",
+      "product": {
+        "model": "ddf",
+        "orientation": "out",
+        "rts": "vrs",
+        "direction": "custom"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_ddf.R",
+        "args": [
+          "vrs",
+          "out",
+          "custom"
+        ]
+      },
+      "compare": {
+        "score": "beta"
+      }
+    },
+    {
+      "name": "toy_ddf_ddf_custom_non_vrs",
+      "data": "../golden/toy_ddf/data.csv",
+      "product": {
+        "model": "ddf",
+        "orientation": "non",
+        "rts": "vrs",
+        "direction": "custom"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_ddf.R",
+        "args": [
+          "vrs",
+          "non",
+          "custom"
+        ]
+      },
+      "compare": {
+        "score": "beta"
+      }
+    },
+    {
+      "name": "toy_cross_ddf_own_in",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "ddf",
+        "orientation": "in",
+        "rts": "crs",
+        "direction": "own"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_ddf.R",
+        "args": [
+          "crs",
+          "in",
+          "own"
+        ]
+      },
+      "compare": {
+        "score": "beta"
+      }
+    },
+    {
+      "name": "toy_cross_ddf_own_out",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "ddf",
+        "orientation": "out",
+        "rts": "crs",
+        "direction": "own"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_ddf.R",
+        "args": [
+          "crs",
+          "out",
+          "own"
+        ]
+      },
+      "compare": {
+        "score": "beta"
+      }
+    },
+    {
+      "name": "toy_cross_ddf_own_non",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "ddf",
+        "orientation": "non",
+        "rts": "crs",
+        "direction": "own"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_ddf.R",
+        "args": [
+          "crs",
+          "non",
+          "own"
+        ]
+      },
+      "compare": {
+        "score": "beta"
+      }
+    },
+    {
+      "name": "toy_cross_ddf_mean_in",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "ddf",
+        "orientation": "in",
+        "rts": "crs",
+        "direction": "mean"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_ddf.R",
+        "args": [
+          "crs",
+          "in",
+          "mean"
+        ]
+      },
+      "compare": {
+        "score": "beta"
+      }
+    },
+    {
+      "name": "toy_cross_ddf_mean_out",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "ddf",
+        "orientation": "out",
+        "rts": "crs",
+        "direction": "mean"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_ddf.R",
+        "args": [
+          "crs",
+          "out",
+          "mean"
+        ]
+      },
+      "compare": {
+        "score": "beta"
+      }
+    },
+    {
+      "name": "toy_cross_ddf_mean_non",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "ddf",
+        "orientation": "non",
+        "rts": "crs",
+        "direction": "mean"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_ddf.R",
+        "args": [
+          "crs",
+          "non",
+          "mean"
+        ]
+      },
+      "compare": {
+        "score": "beta"
+      }
+    },
+    {
+      "name": "toy_cross_ddf_unit_in",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "ddf",
+        "orientation": "in",
+        "rts": "crs",
+        "direction": "unit"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_ddf.R",
+        "args": [
+          "crs",
+          "in",
+          "unit"
+        ]
+      },
+      "compare": {
+        "score": "beta"
+      }
+    },
+    {
+      "name": "toy_cross_ddf_unit_out",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "ddf",
+        "orientation": "out",
+        "rts": "crs",
+        "direction": "unit"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_ddf.R",
+        "args": [
+          "crs",
+          "out",
+          "unit"
+        ]
+      },
+      "compare": {
+        "score": "beta"
+      }
+    },
+    {
+      "name": "toy_cross_ddf_unit_non",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "ddf",
+        "orientation": "non",
+        "rts": "crs",
+        "direction": "unit"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_ddf.R",
+        "args": [
+          "crs",
+          "non",
+          "unit"
+        ]
+      },
+      "compare": {
+        "score": "beta"
+      }
+    },
+    {
+      "name": "toy_cross_ddf_rdm_non",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "ddf",
+        "orientation": "non",
+        "rts": "vrs",
+        "direction": "rdm"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_rdm.R",
+        "args": []
+      },
+      "compare": {
+        "score": "beta"
+      }
+    },
+    {
+      "name": "toy_fdh_fdh_in",
+      "data": "../golden/toy_fdh/data.csv",
+      "product": {
+        "model": "fdh",
+        "orientation": "in",
+        "rts": ""
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_fdh.R",
+        "args": [
+          "io"
+        ]
+      },
+      "compare": {
+        "score": "efficiency"
+      }
+    },
+    {
+      "name": "toy_fdh_fdh_out",
+      "data": "../golden/toy_fdh/data.csv",
+      "product": {
+        "model": "fdh",
+        "orientation": "out",
+        "rts": ""
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_fdh.R",
+        "args": [
+          "oo"
+        ]
+      },
+      "compare": {
+        "score": "efficiency"
+      }
+    },
+    {
+      "name": "toy_price_cost_crs",
+      "data": "../golden/toy_price/data.csv",
+      "product": {
+        "model": "cost",
+        "orientation": "non",
+        "rts": "crs"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_price.R",
+        "args": [
+          "crs",
+          "cost"
+        ]
+      },
+      "compare": {
+        "score": "efficiency"
+      }
+    },
+    {
+      "name": "toy_price_revenue_crs",
+      "data": "../golden/toy_price/data.csv",
+      "product": {
+        "model": "revenue",
+        "orientation": "non",
+        "rts": "crs"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_price.R",
+        "args": [
+          "crs",
+          "revenue"
+        ]
+      },
+      "compare": {
+        "score": "efficiency"
+      }
+    },
+    {
+      "name": "toy_price_cost_vrs",
+      "data": "../golden/toy_price/data.csv",
+      "product": {
+        "model": "cost",
+        "orientation": "non",
+        "rts": "vrs"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_price.R",
+        "args": [
+          "vrs",
+          "cost"
+        ]
+      },
+      "compare": {
+        "score": "efficiency"
+      }
+    },
+    {
+      "name": "toy_price_revenue_vrs",
+      "data": "../golden/toy_price/data.csv",
+      "product": {
+        "model": "revenue",
+        "orientation": "non",
+        "rts": "vrs"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_price.R",
+        "args": [
+          "vrs",
+          "revenue"
+        ]
+      },
+      "compare": {
+        "score": "efficiency"
+      }
+    },
+    {
+      "name": "toy_cross_additive_raw_crs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "additive",
+        "orientation": "non",
+        "rts": "crs"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_additive.R",
+        "args": [
+          "crs",
+          "raw"
+        ]
+      },
+      "compare": {
+        "score": "objval"
+      }
+    },
+    {
+      "name": "toy_cross_additive_mean_crs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "additive_normalized",
+        "orientation": "non",
+        "rts": "crs"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_additive.R",
+        "args": [
+          "crs",
+          "mean"
+        ]
+      },
+      "compare": {
+        "score": "objval"
+      }
+    },
+    {
+      "name": "toy_cross_additive_range_crs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "ram",
+        "orientation": "non",
+        "rts": "crs"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_additive.R",
+        "args": [
+          "crs",
+          "range"
+        ]
+      },
+      "compare": {
+        "score": "objval"
+      }
+    },
+    {
+      "name": "toy_cross_erm_in_crs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "erm",
+        "orientation": "in",
+        "rts": "crs"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_erm.R",
+        "args": [
+          "crs",
+          "io"
+        ]
+      },
+      "compare": {
+        "score": "efficiency"
+      }
+    },
+    {
+      "name": "toy_cross_erm_out_crs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "erm",
+        "orientation": "out",
+        "rts": "crs"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_erm.R",
+        "args": [
+          "crs",
+          "oo"
+        ]
+      },
+      "compare": {
+        "score": {
+          "column": "efficiency",
+          "transform": "reciprocal",
+          "reason": "deaR 输出导向 Russell 报告原始 phi_bar，产品侧为归一 1/phi_bar（04 册 §2 差异显式标注）"
+        }
+      }
+    },
+    {
+      "name": "toy_cross_additive_raw_vrs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "additive",
+        "orientation": "non",
+        "rts": "vrs"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_additive.R",
+        "args": [
+          "vrs",
+          "raw"
+        ]
+      },
+      "compare": {
+        "score": "objval"
+      }
+    },
+    {
+      "name": "toy_cross_additive_mean_vrs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "additive_normalized",
+        "orientation": "non",
+        "rts": "vrs"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_additive.R",
+        "args": [
+          "vrs",
+          "mean"
+        ]
+      },
+      "compare": {
+        "score": "objval"
+      }
+    },
+    {
+      "name": "toy_cross_additive_range_vrs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "ram",
+        "orientation": "non",
+        "rts": "vrs"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_additive.R",
+        "args": [
+          "vrs",
+          "range"
+        ]
+      },
+      "compare": {
+        "score": "objval"
+      }
+    },
+    {
+      "name": "toy_cross_erm_in_vrs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "erm",
+        "orientation": "in",
+        "rts": "vrs"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_erm.R",
+        "args": [
+          "vrs",
+          "io"
+        ]
+      },
+      "compare": {
+        "score": "efficiency"
+      }
+    },
+    {
+      "name": "toy_cross_erm_out_vrs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "erm",
+        "orientation": "out",
+        "rts": "vrs"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_erm.R",
+        "args": [
+          "vrs",
+          "oo"
+        ]
+      },
+      "compare": {
+        "score": {
+          "column": "efficiency",
+          "transform": "reciprocal",
+          "reason": "deaR 输出导向 Russell 报告原始 phi_bar，产品侧为归一 1/phi_bar（04 册 §2 差异显式标注）"
+        }
+      }
+    },
+    {
+      "name": "toy_weight_additive_weighted",
+      "data": "../golden/toy_weight/data.csv",
+      "product": {
+        "model": "additive_weighted",
+        "orientation": "non",
+        "rts": "crs"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_additive.R",
+        "args": [
+          "crs",
+          "user"
+        ]
+      },
+      "compare": {
+        "score": "objval"
+      }
+    },
+    {
+      "name": "toy_weight_sbm_weighted",
+      "data": "../golden/toy_weight/data.csv",
+      "product": {
+        "model": "sbm_weighted",
+        "orientation": "non",
+        "rts": "crs"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_sbm_weighted.R",
+        "args": [
+          "crs",
+          "no"
+        ]
+      },
+      "compare": {
+        "score": "efficiency"
+      }
+    },
+    {
+      "name": "toy_cross_cross_dg_i_crs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "cross_efficiency",
+        "orientation": "in",
+        "rts": "crs",
+        "method": "dg_i"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_cross.R",
+        "args": [
+          "crs",
+          "dg_i"
+        ]
+      },
+      "compare": {
+        "score": "e"
+      }
+    },
+    {
+      "name": "toy_cross_cross_dg_ii_crs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "cross_efficiency",
+        "orientation": "in",
+        "rts": "crs",
+        "method": "dg_ii"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_cross.R",
+        "args": [
+          "crs",
+          "dg_ii"
+        ]
+      },
+      "compare": {
+        "score": "e"
+      }
+    },
+    {
+      "name": "toy_cross_cross_m3_i_crs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "cross_efficiency",
+        "orientation": "in",
+        "rts": "crs",
+        "method": "m3_i"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_cross.R",
+        "args": [
+          "crs",
+          "m3_i"
+        ]
+      },
+      "compare": {
+        "score": "e"
+      }
+    },
+    {
+      "name": "toy_cross_cross_m3_ii_crs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "cross_efficiency",
+        "orientation": "in",
+        "rts": "crs",
+        "method": "m3_ii"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_cross.R",
+        "args": [
+          "crs",
+          "m3_ii"
+        ]
+      },
+      "compare": {
+        "score": "e"
+      }
+    },
+    {
+      "name": "toy_cross_cross_dg_i_vrs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "cross_efficiency",
+        "orientation": "in",
+        "rts": "vrs",
+        "method": "dg_i"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_cross.R",
+        "args": [
+          "vrs",
+          "dg_i"
+        ]
+      },
+      "compare": {
+        "score": "e"
+      }
+    },
+    {
+      "name": "toy_cross_cross_dg_ii_vrs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "cross_efficiency",
+        "orientation": "in",
+        "rts": "vrs",
+        "method": "dg_ii"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_cross.R",
+        "args": [
+          "vrs",
+          "dg_ii"
+        ]
+      },
+      "compare": {
+        "score": "e"
+      }
+    },
+    {
+      "name": "toy_cross_cross_m3_i_vrs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "cross_efficiency",
+        "orientation": "in",
+        "rts": "vrs",
+        "method": "m3_i"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_cross.R",
+        "args": [
+          "vrs",
+          "m3_i"
+        ]
+      },
+      "compare": {
+        "score": "e"
+      }
+    },
+    {
+      "name": "toy_cross_cross_m3_ii_vrs",
+      "data": "../golden/toy_cross/data.csv",
+      "product": {
+        "model": "cross_efficiency",
+        "orientation": "in",
+        "rts": "vrs",
+        "method": "m3_ii"
+      },
+      "reference": {
+        "tool": "deaR",
+        "script": "refimpl/deaR_cross.R",
+        "args": [
+          "vrs",
+          "m3_ii"
+        ]
+      },
+      "compare": {
+        "score": "e"
+      }
+    },
+    {
+      "name": "toy_panel_malmquist_crs",
+      "data": "../golden/toy_panel/data.csv",
+      "product": {
+        "model": "malmquist",
+        "orientation": "in",
+        "rts": "crs",
+        "panel": true
+      },
+      "reference": {
+        "tool": "productivity",
+        "script": "refimpl/productivity_malm.R",
+        "args": [
+          "crs"
+        ]
+      },
+      "compare": {
+        "score": "malmquist"
+      }
+    }
+  ]
+}
