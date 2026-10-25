@@ -101,16 +101,14 @@ collect_threads() { # collect_threads <label> <model> <rts> <dmu> <io>
 }
 
 case "$MODE" in
-slim) # 核心档（M3 报告主用，~3-4h）：10 万 BCC threads 8/auto × seed1 + 1 万全矩阵
-    echo "## 核心档（M3 实测，DR-008）" > "$OUT/table.md"
-    echo "| 规格 | threads | 耗时（秒/均值区间） |" >> "$OUT/table.md"
+slim) # 核心档（M3 报告主用，~1h）：1 万全矩阵；10 万 BCC threads=8 实测（5h08m）由
+    # 2026-10-26 全量长跑提供（design_docs/reports/m3_test_report.md §3），不重跑
+    echo "## 核心档（M3 实测，DR-008；10 万 BCC 单 case 引用长跑实测 5h08m）" > "$OUT/table.md"
+    echo "| 规格 | threads | 耗时（秒） |" >> "$OUT/table.md"
     echo "|---|---|---|" >> "$OUT/table.md"
-    ensure_data 10000 3x3; ensure_data 100000 3x3
+    ensure_data 10000 3x3
     for threads in 1 2 4 8 auto; do
         run_case "1万 3×3 BCC seed1" datasets/generated/bench_10000_3x3_seed1.csv bcc vrs "$threads"
-    done
-    for threads in 8 auto; do
-        run_case "10万 3×3 BCC seed1" datasets/generated/bench_100000_3x3_seed1.csv bcc vrs "$threads"
     done
     awk -F'\t' '{printf "| %s | %s | %s |\n", $1, $2, $3}' "$OUT/raw.tsv" >> "$OUT/table.md"
     ;;
