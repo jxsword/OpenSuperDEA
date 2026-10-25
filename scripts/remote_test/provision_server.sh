@@ -48,7 +48,8 @@ else
     echo "R 已安装：$(Rscript -e 'cat(as.character(getRversion()))')"
 fi
 echo "--- 依赖（r-base-dev/gfortran/blas/lapack/pip）---"
-sudo apt-get install -y --no-install-recommends r-base-dev gfortran libblas3 liblapack3 python3-pip
+sudo apt-get install -y --no-install-recommends r-base-dev gfortran libblas3 liblapack3 python3-pip \
+    libcurl4-openssl-dev libssl-dev libxml2-dev libfontconfig1-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev
 echo "--- swapfile（内存 3.8G 无 swap，兜底编译峰值；推荐创建）---"
 if [ ! -f /data/swapfile ]; then
     read -r -p "创建 4G swapfile 于 /data/swapfile? [Y/n] " answer
