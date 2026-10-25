@@ -1,0 +1,3 @@
+# 生成的基准算例 CSV 不入库（10 万 ≈ 8MB/组、100 万 ≈ 80MB/组 × 10 seeds）
+# 由 gen_bench_data.py 按固定 seed 一键复现（07 册 §4.2）
+*.csv
